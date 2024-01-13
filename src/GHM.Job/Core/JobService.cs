@@ -2,7 +2,11 @@
 
 public class JobService<TRequest> : IJobService<TRequest>
 {
-    public async Task ExecuteAsync<TResponse>(Job<TRequest, TResponse> job, TimeSpan interval, CancellationToken token)
+    public async Task ExecuteAsync<TResponse>(
+        Job<TRequest, TResponse> job,
+        TimeSpan interval,
+        CancellationToken token = default
+    )
     {
         while (!token.IsCancellationRequested)
         {
@@ -11,7 +15,7 @@ public class JobService<TRequest> : IJobService<TRequest>
         }
     }
 
-    public async Task ExecuteAsync<TResponse>(Job<TRequest, TResponse> job, CancellationToken token)
+    public async Task ExecuteAsync<TResponse>(Job<TRequest, TResponse> job, CancellationToken token = default)
     {
         await Task.Run(job.DoWork, token);
     }
