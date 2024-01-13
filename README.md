@@ -4,7 +4,7 @@
 
 <h1 align="center"> GHM.Job </h1>
 
-GHM.Job is a nuget package aims to validate data.
+GHM.Job is a nuget package aims to run jobs in separates ways(Get Request, Run Request and Update Request).
 
 ## Install Package
 
@@ -20,174 +20,89 @@ Package Manager
 NuGet\Install-Package GHM.Job
 ```
 
-## IServiceCollectionExtensions
-
-To add transient interface `IValidate` to implementate `Validate` or `IThrower` to implementate `Thrower` , call extension method to your serviceCollection.
-
-```csharp
-using GHM.Job.Extensions;
-
-var builder = WebApplication.CreateBuilder(args);
-var services = builder.Services;
-service.AddGhmJob();
-```
-
-If you want to set a default exception for `IThrower`, pass a Func<string, Exception> as a parameter to the `AddGhmJob` method.
-
-```csharp
-using GHM.Job.Extensions;
-
-var builder = WebApplication.CreateBuilder(args);
-var services = builder.Services;
-service.AddGhmJob((message) => new TestException(message));
-```
-
 ## Example
 
-### To validate request data
+### To run a Job
+
+The Job Run the Sequence:
+
+- Get Requests Unique or List
+- Execute Request
+- After Execute Request
+- On error Execute Request
+- Update Request
+- After Update Request
+- On error Update Request
+- After Work Request
+- property to log Id
 
 ```csharp
 using GHM.Job;
 
-public Validation[] ValidateCreateUserRequest(CreateUserRequest request)
+public class MyBackgroundService : BackgroundService
 {
-    IValidate validate;
+    private readonly IJobService<string> _jobService = new JobService<string>();
 
-    return new Validation[]
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        validate.IfNotNull(request.Name,"Name must not be null"),
-        validate.IfNotZero(request.Age,"Age must not be 0")
-    };
-}
-```
+        var result = "processing";
 
-Throw Exception from validation if it's invalid.
+        string Requester() => " => data";
+        string Executer(string data) => result += data + " => Executer";
+        void Updater(string data) => result += " => Updater";
+        void AfterWork() => result += " => AfterWork";
+        void AfterExecuter(string data) => result += " => AfterExecuter";
+        string LoggerId(string data) => data;
 
-```csharp
-using GHM.Job;
+        // Act
+        var job = Job.Create(
+            requesterUnique: Requester,
+            executer: Executer,
+            updater: Updater,
+            afterWork: AfterWork,
+            afterExecuter: AfterExecuter,
+            loggerId: LoggerId
+        );
 
-public Validation[] ValidateCreateUserRequest(CreateUserRequest request)
-{
-    IValidate validate;
+        // Setting delay: 1 second to the next job running.
+        await _jobService.ExecuteAsync(job, TimeSpan.FromSeconds(1), stoppingToken);
 
-    var list = new ValidationList
-    {
-        validate.IfNotNull(request.Name,"Name must not be null"),
-        validate.IfNotZero(request.Age,"Age must not be 0")
-    };
+        // Running 1 time.
+        await _jobService.ExecuteAsync(job, stoppingToken);
 
-    list.ThrowErrorsWithMessage(" | ") //throw new ValidationException("Name must not be null | Age must not be 0").
-    return list;
-}
-```
-
-### To throw if request data is invalid
-
-```csharp
-using GHM.Job;
-
-public bool ValidateCreateUserRequest(CreateUserRequest request)
-{
-    IThrower thrower;
-
-    thrower.IfNull(request.Name,"Name must not be null");// if null, throw ArgumentException.
-    thrower.IfZero(request.Age,"Age must not be 0"); // if zero, throw ArgumentException.
-
-    return true;
-}
-```
-
-Setting a Exception.
-
-```csharp
-using GHM.Job;
-public bool ValidateCreateUserRequest(CreateUserRequest request)
-{
-    IThrower thrower;
-    thrower.SetException((message) => new TestException(message))
-
-    thrower.IfNull(request.Name,"Name must not be null");
-    thrower.IfZero(request.Age,"Age must not be 0");
-
-    return true;
+        // result = "processing => data => Executer => AfterExecuter => Updater => AfterWork"
+    }
 }
 ```
 
 ## Classes
 
-### Validation
+### IJobService
 
-Validation is a object with properties(Message, IsValid).
-
-```csharp
-using GHM.Job;
-
-var validationSuccess = Validation.Success("Successful message");
-
-validationSuccess.Message; // "Successful message"
-validationSuccess.IsValid; // true
-
-var validationError = Validation.Error("Error message");
-
-validationError.Message; // "Error message"
-validationError.IsValid; // false
-```
-
-## Interfaces
-
-### IValidate
-
-You can use it to return a validation result.
+It is a interface implemented by `JobService<TRequest>`
 
 ```csharp
+namespace GHM.Job;
 
-public interface IValidate
+public class JobService<TRequest> : IJobService<TRequest>
 {
-    Validation IfTrue(bool condition, string message);
-    Validation IfFalse(bool condition, string message);
-    Validation IfNotDefault<T>(T obj, string message);
-    Validation IfNotNull(object? obj, string message);
-    Validation IfNull(object? obj, string message);
-    Validation IfEqual(object obj, object objToComapere, string message);
-    Validation IfNotZero(int number, string message);
-    Validation IfNotZero(decimal number, string message);
-    Validation IfGreaterOrEqual(int number, int numberToCompare, string message);
-    Validation IfGreater(int number, int numberToCompare, string message);
-    Validation IfGreaterOrEqual(decimal number, decimal numberToCompare, string message);
-    Validation IfGreater(decimal number, decimal numberToCompare, string message);
-    Validation IfNotEmpty(string text, string message);
-    Validation IfParseToLong(string text, string message);
-    Validation IfNotEmpty<T>(IEnumerable<T> list, string message);
-    Validation IfOlder(DateTime date, DateTime dateToCompare, string message);
-    Validation IfOlderOrEqual(DateTime date, DateTime dateToCompare, string message);
-}
-```
+    public async Task ExecuteAsync<TResponse>(
+        Job<TRequest, TResponse> job,
+        TimeSpan interval,
+        CancellationToken token = default
+    )
+    {
+        while (!token.IsCancellationRequested)
+        {
+            await Task.Run(job.DoWork, token);
+            await Task.Delay(interval, token);
+        }
+    }
 
-### IThrower
-
-You can use it to throw exception.
-
-```csharp
-public interface IThrower
-{
-    void SetException(Func<string, Exception> exceptionThrower);
-    bool IfFalse(bool condition, string message);
-    bool IfTrue(bool condition, string message);
-    bool IfDefault<T>(T obj, string message);
-    bool IfNotNull(object? obj, string message);
-    bool IfNull(object? obj, string message);
-    bool IfNotEqual(object obj, object objToComapere, string message);
-    bool IfZero(int number, string message);
-    bool IfZero(decimal number, string message);
-    bool IfGreaterOrEqual(int number, int numberToCompare, string message);
-    bool IfGreater(int number, int numberToCompare, string message);
-    bool IfGreaterOrEqual(decimal number, decimal numberToCompare, string message);
-    bool IfGreater(decimal number, decimal numberToCompare, string message);
-    bool IfEmpty(string text, string message);
-    bool IfNotParseToLong(string text, string message);
-    bool IfEmpty<T>(IEnumerable<T> list, string message);
-    bool IfOlder(DateTime date, DateTime dateToCompare, string message);
-    bool IfOlderOrEqual(DateTime date, DateTime dateToCompare, string message);
+    public async Task ExecuteAsync<TResponse>(Job<TRequest, TResponse> job, CancellationToken token = default)
+    {
+        await Task.Run(job.DoWork, token);
+    }
 }
 ```
 
