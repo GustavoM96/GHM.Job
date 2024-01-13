@@ -34,7 +34,6 @@ The Job Run the Sequence:
 - After Update Request
 - On error Update Request
 - After Work Request
-- property to log Id
 
 ```csharp
 using GHM.Job;
