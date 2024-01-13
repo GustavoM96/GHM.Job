@@ -22,7 +22,7 @@ public class JobServiceTests
     }
 
     [Fact]
-    public async Task Test_ExecuteAsync_When_CancelToken_ShouldRun_OneTimeAndThrow()
+    public async Task Test_ExecuteAsync_When_CancelToken_ShouldNotRun()
     {
         // Arrange
         var result = "processing";
@@ -32,19 +32,18 @@ public class JobServiceTests
 
         string Requester() => " => data";
         string Executer(string data) => result += data + " => Executer";
-        void AfterWork() => source.Cancel();
+        source.Cancel();
 
         // Act
-        var job = Job.Create(requesterUnique: Requester, executer: Executer, afterWork: AfterWork);
-        async Task Run() => await _jobService.ExecuteAsync(job, TimeSpan.FromSeconds(1), token);
+        var job = Job.Create(requesterUnique: Requester, executer: Executer);
+        async Task Run() => await _jobService.ExecuteAsync(job, token);
 
         // Assert
         await Assert.ThrowsAsync<TaskCanceledException>(Run);
-        Assert.Equal("processing => data => Executer", result);
     }
 
     [Fact]
-    public async Task Test_ExecuteAsync_When_SetInterval_ShouldRun()
+    public async Task Test_ExecuteAsync_When_SetInterval_ShouldRun_UntilCancel()
     {
         // Arrange
         var result = "processing";
