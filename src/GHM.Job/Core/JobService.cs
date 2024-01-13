@@ -10,4 +10,9 @@ public class JobService<TRequest> : IJobService<TRequest>
             await Task.Delay(interval, token);
         }
     }
+
+    public async Task ExecuteAsync<TResponse>(Job<TRequest, TResponse> job, CancellationToken token)
+    {
+        await Task.Run(job.DoWork, token);
+    }
 }
