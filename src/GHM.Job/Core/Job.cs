@@ -7,6 +7,7 @@ public class Job<TRequest, TResponse>
         Func<TRequest>? requesterUnique,
         Func<TRequest, TResponse> executer,
         Action<TRequest>? afterExecuter,
+        Action<TRequest>? afterUpdater,
         Action? afterWork,
         Action<TRequest>? updater,
         Action<Exception, TRequest>? onExecuterError,
@@ -18,6 +19,7 @@ public class Job<TRequest, TResponse>
         RequesterUnique = requesterUnique;
         Executer = executer;
         AfterExecuter = afterExecuter;
+        AfterUpdater = afterUpdater;
         AfterWork = afterWork;
         Updater = updater;
         OnExecuterError = onExecuterError;
@@ -31,6 +33,7 @@ public class Job<TRequest, TResponse>
     public Func<TRequest>? RequesterUnique { get; init; }
     public Func<TRequest, TResponse> Executer { get; init; }
     public Action<TRequest>? AfterExecuter { get; init; }
+    public Action<TRequest>? AfterUpdater { get; init; }
     public Action? AfterWork { get; init; }
     public Action<TRequest>? Updater { get; init; }
     public Action<Exception, TRequest>? OnExecuterError { get; init; }
@@ -47,10 +50,6 @@ public class Job<TRequest, TResponse>
         try
         {
             var response = Executer(request);
-            if (AfterExecuter is not null)
-            {
-                AfterExecuter(request);
-            }
 
             return response;
         }
@@ -62,6 +61,13 @@ public class Job<TRequest, TResponse>
             }
 
             return default;
+        }
+        finally
+        {
+            if (AfterExecuter is not null)
+            {
+                AfterExecuter(request);
+            }
         }
     }
 
@@ -86,6 +92,13 @@ public class Job<TRequest, TResponse>
                 OnUpdaterError(ex, request);
             }
         }
+        finally
+        {
+            if (AfterUpdater is not null)
+            {
+                AfterUpdater(request);
+            }
+        }
     }
 
     private IEnumerable<TRequest> RunRequester()
@@ -104,11 +117,6 @@ public class Job<TRequest, TResponse>
     {
         var response = RunExecuter(request);
         RunUpdater(request);
-
-        if (AfterWork is not null)
-        {
-            AfterWork();
-        }
 
         return response;
     }
@@ -131,8 +139,8 @@ public class Job<TRequest, TResponse>
         {
             var request = RunRequesterUnique();
             RunRequest(request);
-            return;
         }
+
         if (Requester is not null)
         {
             var requests = RunRequester();
@@ -140,6 +148,11 @@ public class Job<TRequest, TResponse>
             {
                 RunRequest(request);
             }
+        }
+
+        if (AfterWork is not null)
+        {
+            AfterWork();
         }
     }
 }
@@ -152,6 +165,7 @@ public static class Job
         Action<TRequest>? updater = null,
         Action? afterWork = null,
         Action<TRequest>? afterExecuter = null,
+        Action<TRequest>? afterUpdater = null,
         Action<Exception, TRequest>? onExecuterError = null,
         Action<Exception, TRequest>? onUpdaterError = null,
         Func<TRequest, object>? loggerId = null
@@ -162,6 +176,7 @@ public static class Job
             null,
             executer,
             afterExecuter,
+            afterUpdater,
             afterWork,
             updater,
             onExecuterError,
@@ -176,6 +191,7 @@ public static class Job
         Action<TRequest>? updater = null,
         Action? afterWork = null,
         Action<TRequest>? afterExecuter = null,
+        Action<TRequest>? afterUpdater = null,
         Action<Exception, TRequest>? onExecuterError = null,
         Action<Exception, TRequest>? onUpdaterError = null,
         Func<TRequest, object>? loggerId = null
@@ -186,6 +202,7 @@ public static class Job
             requesterUnique,
             executer,
             afterExecuter,
+            afterUpdater,
             afterWork,
             updater,
             onExecuterError,
