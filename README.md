@@ -87,18 +87,18 @@ public class MyBackgroundService : BackgroundService
     {
         var result = "processing";
 
-        Task<string> Requester() => Task.FromResult(" => data");
-        Task<string> Executer(string data) => Task.FromResult(result += data + " => Executer");
-        Task Updater(string data) => Task.FromResult(result += " => Updater");
+        Task<string> RequesterAsync() => Task.FromResult(" => data");
+        Task<string> ExecuterAsync(string data) => Task.FromResult(result += data + " => Executer");
+        Task UpdaterAsync(string data) => Task.FromResult(result += " => Updater");
         void AfterWork() => result += " => AfterWork";
         void AfterExecuter(string data) => result += " => AfterExecuter";
         string LoggerId(string data) => data;
 
         // Act
         var job = JobAsync.Create(
-            requesterUnique: Requester,
-            executer: Executer,
-            updater: Updater,
+            requesterUnique: RequesterAsync,
+            executer: ExecuterAsync,
+            updater: UpdaterAsync,
             afterWork: AfterWork,
             afterExecuter: AfterExecuter,
             loggerId: LoggerId
