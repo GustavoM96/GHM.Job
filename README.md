@@ -74,6 +74,47 @@ public class MyBackgroundService : BackgroundService
 }
 ```
 
+You can run your job async.
+
+```csharp
+using GHM.Job;
+
+public class MyBackgroundService : BackgroundService
+{
+    private readonly IJobService<string> _jobService = new JobService<string>();
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        var result = "processing";
+
+        Task<string> Requester() => Task.FromResult(" => data");
+        Task<string> Executer(string data) => Task.FromResult(result += data + " => Executer");
+        Task Updater(string data) => Task.FromResult(result += " => Updater");
+        void AfterWork() => result += " => AfterWork";
+        void AfterExecuter(string data) => result += " => AfterExecuter";
+        string LoggerId(string data) => data;
+
+        // Act
+        var job = JobAsync.Create(
+            requesterUnique: Requester,
+            executer: Executer,
+            updater: Updater,
+            afterWork: AfterWork,
+            afterExecuter: AfterExecuter,
+            loggerId: LoggerId
+        );
+
+        // Setting delay: 1 second to the next job running.
+        await _jobService.ExecuteAsync(job, TimeSpan.FromSeconds(1), stoppingToken);
+
+        // Running 1 time.
+        await _jobService.ExecuteAsync(job, stoppingToken);
+
+        // result = "processing => data => Executer => AfterExecuter => Updater => AfterWork"
+    }
+}
+```
+
 ## Classes
 
 ### IJobService
