@@ -199,6 +199,23 @@ public class JobService<TRequest> : IJobService<TRequest>
     {
         await Task.Run(job.DoWork, token);
     }
+
+    public async Task ExecuteAsync<TResponse>(Job<TRequest, TResponse> job, string cron, CancellationToken token = default)
+    {
+        var crontabSchedule = CrontabSchedule.Parse(cron);
+        var nextOccurrence = crontabSchedule.GetNextOccurrence(DateTime.Now);
+
+        while (!token.IsCancellationRequested)
+        {
+            if (DateTime.Now > nextOccurrence)
+            {
+                await Task.Run(job.DoWork, token);
+                nextOccurrence = crontabSchedule.GetNextOccurrence(DateTime.Now);
+            }
+
+            await Task.Delay(1000, token);
+        }
+    }
 }
 ```
 
