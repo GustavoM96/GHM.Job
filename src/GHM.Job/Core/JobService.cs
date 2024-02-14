@@ -1,4 +1,6 @@
-﻿namespace GHM.Job;
+﻿using NCrontab;
+
+namespace GHM.Job;
 
 public class JobService<TRequest> : IJobService<TRequest>
 {
@@ -20,6 +22,23 @@ public class JobService<TRequest> : IJobService<TRequest>
         await Task.Run(job.DoWork, token);
     }
 
+    public async Task ExecuteAsync<TResponse>(Job<TRequest, TResponse> job, string cron, CancellationToken token = default)
+    {
+        var crontabSchedule = CrontabSchedule.Parse(cron);
+        var nextOccurrence = crontabSchedule.GetNextOccurrence(DateTime.Now);
+
+        while (!token.IsCancellationRequested)
+        {
+            if (DateTime.Now > nextOccurrence)
+            {
+                await Task.Run(job.DoWork, token);
+                nextOccurrence = crontabSchedule.GetNextOccurrence(DateTime.Now);
+            }
+
+            await Task.Delay(1000, token);
+        }
+    }
+
     public async Task ExecuteAsync<TResponse>(
         JobAsync<TRequest, TResponse> job,
         TimeSpan interval,
@@ -36,5 +55,26 @@ public class JobService<TRequest> : IJobService<TRequest>
     public async Task ExecuteAsync<TResponse>(JobAsync<TRequest, TResponse> job, CancellationToken token = default)
     {
         await Task.Run(job.DoWork, token);
+    }
+
+    public async Task ExecuteAsync<TResponse>(
+        JobAsync<TRequest, TResponse> job,
+        string cron,
+        CancellationToken token = default
+    )
+    {
+        var crontabSchedule = CrontabSchedule.Parse(cron);
+        var nextOccurrence = crontabSchedule.GetNextOccurrence(DateTime.Now);
+
+        while (!token.IsCancellationRequested)
+        {
+            if (DateTime.Now > nextOccurrence)
+            {
+                await Task.Run(job.DoWork, token);
+                nextOccurrence = crontabSchedule.GetNextOccurrence(DateTime.Now);
+            }
+
+            await Task.Delay(1000, token);
+        }
     }
 }
