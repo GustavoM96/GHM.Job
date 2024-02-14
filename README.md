@@ -69,6 +69,10 @@ public class MyBackgroundService : BackgroundService
         // Running 1 time.
         await _jobService.ExecuteAsync(job, stoppingToken);
 
+        // Setting cron: At minute 5 to job running.
+        // More informations about cron. https://crontab.guru
+        await _jobService.ExecuteAsync(job, "5 * * * *" ,stoppingToken);
+
         // result = "processing => data => Executer => AfterExecuter => Updater => AfterWork"
     }
 }
