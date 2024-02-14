@@ -50,14 +50,14 @@ public class JobAsyncServiceTests
 
         var source = new CancellationTokenSource();
         var token = source.Token;
-        var executeConter = 0;
+        var executeCounter = 0;
 
         Task<string> Requester() => Task.FromResult(" => data");
-        Task<string> Executer(string data) => Task.FromResult(result += data + $" => Executer{executeConter}");
-        void AfterExecuter(string data) => executeConter++;
+        Task<string> Executer(string data) => Task.FromResult(result += data + $" => Executer{executeCounter}");
+        void AfterExecuter(string data) => executeCounter++;
         void AfterWork()
         {
-            if (executeConter == 2)
+            if (executeCounter == 2)
                 source.Cancel();
         }
 
@@ -73,5 +73,40 @@ public class JobAsyncServiceTests
         // Assert
         await Assert.ThrowsAsync<TaskCanceledException>(Run);
         Assert.Equal("processing => data => Executer0 => data => Executer1", result);
+    }
+
+    [Fact]
+    public async Task Test_ExecuteAsync_When_SetCron_ShouldRun_UntilCancel()
+    {
+        // Arrange
+        var result = "processing";
+
+        var source = new CancellationTokenSource();
+        var token = source.Token;
+        var executeCounter = 0;
+
+        Task<string> Requester() => Task.FromResult(" => data");
+        Task<string> Executer(string data) => Task.FromResult(result += data + $" => Executer{executeCounter}");
+        void AfterExecuter(string data) => executeCounter++;
+        void AfterWork()
+        {
+            if (executeCounter == 1)
+                source.Cancel();
+        }
+
+        // Act
+        var job = JobAsync.Create(
+            requesterUnique: Requester,
+            executer: Executer,
+            afterExecuter: AfterExecuter,
+            afterWork: AfterWork
+        );
+        async Task Run() => await _jobService.ExecuteAsync(job, "* * * * *", token);
+
+        // Assert
+        // Assertsd
+
+        await Assert.ThrowsAsync<TaskCanceledException>(Run);
+        Assert.Equal("processing => data => Executer0", result);
     }
 }

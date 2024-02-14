@@ -50,14 +50,14 @@ public class JobServiceTests
 
         var source = new CancellationTokenSource();
         var token = source.Token;
-        var executeConter = 0;
+        var executeCounter = 0;
 
         string Requester() => " => data";
-        string Executer(string data) => result += data + $" => Executer{executeConter}";
-        void AfterExecuter(string data) => executeConter++;
+        string Executer(string data) => result += data + $" => Executer{executeCounter}";
+        void AfterExecuter(string data) => executeCounter++;
         void AfterWork()
         {
-            if (executeConter == 2)
+            if (executeCounter == 2)
                 source.Cancel();
         }
 
@@ -73,5 +73,38 @@ public class JobServiceTests
         // Assert
         await Assert.ThrowsAsync<TaskCanceledException>(Run);
         Assert.Equal("processing => data => Executer0 => data => Executer1", result);
+    }
+
+    [Fact]
+    public async Task Test_ExecuteAsync_When_SetCron_ShouldRun_UntilCancel()
+    {
+        // Arrange
+        var result = "processing";
+
+        var source = new CancellationTokenSource();
+        var token = source.Token;
+        var executeCounter = 0;
+
+        string Requester() => " => data";
+        string Executer(string data) => result += data + $" => Executer{executeCounter}";
+        void AfterExecuter(string data) => executeCounter++;
+        void AfterWork()
+        {
+            if (executeCounter == 1)
+                source.Cancel();
+        }
+
+        // Act
+        var job = Job.Create(
+            requesterUnique: Requester,
+            executer: Executer,
+            afterExecuter: AfterExecuter,
+            afterWork: AfterWork
+        );
+        async Task Run() => await _jobService.ExecuteAsync(job, "* * * * *", token);
+
+        // Assert
+        await Assert.ThrowsAsync<TaskCanceledException>(Run);
+        Assert.Equal("processing => data => Executer0", result);
     }
 }
