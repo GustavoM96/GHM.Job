@@ -4,6 +4,13 @@ namespace GHM.Job;
 
 public class JobService<TRequest> : IJobService<TRequest>
 {
+    private readonly ITimeZoneStrategy _timeZoneStrategy;
+
+    public JobService(ITimeZoneStrategy timeZoneStrategy)
+    {
+        _timeZoneStrategy = timeZoneStrategy;
+    }
+
     public async Task ExecuteAsync<TResponse>(
         Job<TRequest, TResponse> job,
         TimeSpan interval,
@@ -64,14 +71,14 @@ public class JobService<TRequest> : IJobService<TRequest>
     )
     {
         var crontabSchedule = CrontabSchedule.Parse(cron);
-        var nextOccurrence = crontabSchedule.GetNextOccurrence(DateTime.Now);
+        var nextOccurrence = crontabSchedule.GetNextOccurrence(_timeZoneStrategy.Now);
 
         while (!token.IsCancellationRequested)
         {
-            if (DateTime.Now > nextOccurrence)
+            if (_timeZoneStrategy.Now > nextOccurrence)
             {
                 await Task.Run(job.DoWork, token);
-                nextOccurrence = crontabSchedule.GetNextOccurrence(DateTime.Now);
+                nextOccurrence = crontabSchedule.GetNextOccurrence(_timeZoneStrategy.Now);
             }
 
             await Task.Delay(1000, token);
