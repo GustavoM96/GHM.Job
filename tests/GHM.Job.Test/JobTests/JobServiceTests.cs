@@ -2,7 +2,7 @@ namespace GHM.Job.Test;
 
 public class JobServiceTests
 {
-    private readonly IJobService<string> _jobService = new JobService<string>();
+    private readonly IJobService<string> _jobService = new JobService<string>(new NowTimeZoneStrategy());
 
     [Fact]
     public async Task Test_ExecuteAsync_ShouldRun_JobDoWork()
@@ -106,5 +106,25 @@ public class JobServiceTests
         // Assert
         await Assert.ThrowsAsync<TaskCanceledException>(Run);
         Assert.Equal("processing => data => Executer0", result);
+    }
+
+    [Fact]
+    public void Test_TimeZoneStrategy()
+    {
+        // Arrange
+        var jobServiceNow = new NowTimeZoneStrategy();
+        var jobServiceUtc = new UtcTimeZoneStrategy();
+        var jobServiceutcAdd2Hours = new UtcAddingHoursTimeZoneStrategy(2);
+
+        // Act
+        static bool DatesAreAlmostEqual(DateTime dateTimeBase, DateTime dateTimeinput)
+        {
+            return dateTimeBase.AddSeconds(1) > dateTimeinput && dateTimeBase.AddSeconds(-1) < dateTimeinput;
+        }
+
+        // Assert
+        Assert.True(DatesAreAlmostEqual(DateTime.Now, jobServiceNow.Now));
+        Assert.True(DatesAreAlmostEqual(DateTime.UtcNow, jobServiceUtc.Now));
+        Assert.True(DatesAreAlmostEqual(DateTime.UtcNow.AddHours(2), jobServiceutcAdd2Hours.Now));
     }
 }
