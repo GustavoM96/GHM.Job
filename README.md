@@ -20,6 +20,58 @@ Package Manager
 NuGet\Install-Package GHM.Job
 ```
 
+## IServiceCollectionExtensions
+
+To add scoped interface `IJobService<>` to implementate `JobService<>` , call extension method to your serviceCollection.
+
+```csharp
+using GHM.Job.Extensions;
+
+var builder = WebApplication.CreateBuilder(args);
+var services = builder.Services;
+service.AddGhmJob();
+```
+
+If you want to set `TimeZoneStrategy` to set a DateTime.Now for executeAsync with cron string `* * * * *`, pass one of these strategies at calling AddGhmJob(ITimeZoneStrategy timeZoneStrategy).
+
+- NowTimeZoneStrategy()
+- UtcTimeZoneStrategy()
+- UtcAddingHoursTimeZoneStrategy(int addhours)
+
+```csharp
+using GHM.Job.Extensions;
+
+var builder = WebApplication.CreateBuilder(args);
+var services = builder.Services;
+
+var strategy = new UtcAddingHoursTimeZoneStrategy(-3) // -3Hours UTC
+service.AddGhmJob(strategy);
+```
+
+```csharp
+public class NowTimeZoneStrategy : ITimeZoneStrategy
+{
+    public DateTime Now => DateTime.Now;
+}
+
+public class UtcTimeZoneStrategy : ITimeZoneStrategy
+{
+    public DateTime Now => DateTime.UtcNow;
+}
+
+public class UtcAddingHoursTimeZoneStrategy : ITimeZoneStrategy
+{
+    private readonly int _addhours;
+
+    public UtcAddingHoursTimeZoneStrategy(int addhours)
+    {
+        _addhours = addhours;
+    }
+
+    public DateTime Now => DateTime.UtcNow.AddHours(_addhours);
+}
+```
+
 ## Example
 
 ### To run a Job
