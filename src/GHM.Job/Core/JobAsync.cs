@@ -42,14 +42,9 @@ public class JobAsync<TRequest, TResponse>
 
     private async Task<TResponse?> RunExecuter(TRequest? request)
     {
-        if (request is null)
-        {
-            return default;
-        }
-
         try
         {
-            var response = await Executer(request);
+            var response = await Executer(request!);
 
             return response;
         }
@@ -57,7 +52,7 @@ public class JobAsync<TRequest, TResponse>
         {
             if (OnExecuterError is not null)
             {
-                OnExecuterError(ex, request);
+                OnExecuterError(ex, request!);
             }
 
             return default;
@@ -66,37 +61,32 @@ public class JobAsync<TRequest, TResponse>
         {
             if (AfterExecuter is not null)
             {
-                AfterExecuter(request);
+                AfterExecuter(request!);
             }
         }
     }
 
     private async Task RunUpdater(TRequest? request)
     {
-        if (request is null)
-        {
-            return;
-        }
-
         try
         {
             if (Updater is not null)
             {
-                await Updater(request);
+                await Updater(request!);
             }
         }
         catch (Exception ex)
         {
             if (OnUpdaterError is not null)
             {
-                OnUpdaterError(ex, request);
+                OnUpdaterError(ex, request!);
             }
         }
         finally
         {
             if (AfterUpdater is not null)
             {
-                AfterUpdater(request);
+                AfterUpdater(request!);
             }
         }
     }
@@ -113,14 +103,6 @@ public class JobAsync<TRequest, TResponse>
         }
     }
 
-    private async Task<TResponse?> RunRequest(TRequest? request)
-    {
-        var response = await RunExecuter(request);
-        await RunUpdater(request);
-
-        return response;
-    }
-
     private async Task<TRequest?> RunRequesterUnique()
     {
         try
@@ -133,12 +115,35 @@ public class JobAsync<TRequest, TResponse>
         }
     }
 
+    private async Task<TResponse?> RunRequest(TRequest? request)
+    {
+        if (request is null)
+        {
+            return default;
+        }
+
+        var response = await RunExecuter(request);
+        await RunUpdater(request);
+
+        return response;
+    }
+
+    private void RunAfterWork()
+    {
+        if (AfterWork is not null)
+        {
+            AfterWork();
+        }
+    }
+
     public async Task DoWork()
     {
         if (RequesterUnique is not null)
         {
             var request = await RunRequesterUnique();
             await RunRequest(request);
+            RunAfterWork();
+            return;
         }
 
         if (Requester is not null)
@@ -148,11 +153,7 @@ public class JobAsync<TRequest, TResponse>
             {
                 await RunRequest(request);
             }
-        }
-
-        if (AfterWork is not null)
-        {
-            AfterWork();
+            RunAfterWork();
         }
     }
 }
