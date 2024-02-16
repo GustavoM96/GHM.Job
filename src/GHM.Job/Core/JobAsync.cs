@@ -1,6 +1,6 @@
 ﻿namespace GHM.Job;
 
-public class JobAsync<TRequest, TResponse>
+public class JobAsync<TRequest, TResponse> : JobBase<TRequest>
 {
     public JobAsync(
         Func<Task<IEnumerable<TRequest>>>? requester,
@@ -27,18 +27,10 @@ public class JobAsync<TRequest, TResponse>
         LoggerId = loggerId;
     }
 
-    private object? Id { get; set; }
-    private readonly string _requestName = typeof(TRequest).Name;
     public Func<Task<IEnumerable<TRequest>>>? Requester { get; init; }
     public Func<Task<TRequest>>? RequesterUnique { get; init; }
     public Func<TRequest, Task<TResponse>> Executer { get; init; }
-    public Action<TRequest>? AfterExecuter { get; init; }
-    public Action<TRequest>? AfterUpdater { get; init; }
-    public Action? AfterWork { get; init; }
     public Func<TRequest, Task>? Updater { get; init; }
-    public Action<Exception, TRequest>? OnExecuterError { get; init; }
-    public Action<Exception, TRequest>? OnUpdaterError { get; init; }
-    public Func<TRequest, object>? LoggerId { get; init; }
 
     private async Task<TResponse?> RunExecuter(TRequest? request)
     {

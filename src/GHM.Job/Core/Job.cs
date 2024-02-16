@@ -1,6 +1,6 @@
 ﻿namespace GHM.Job;
 
-public class Job<TRequest, TResponse>
+public class Job<TRequest, TResponse> : JobBase<TRequest>
 {
     public Job(
         Func<IEnumerable<TRequest>>? requester,
@@ -27,18 +27,10 @@ public class Job<TRequest, TResponse>
         LoggerId = loggerId;
     }
 
-    private object? Id { get; set; }
-    private readonly string _requestName = typeof(TRequest).Name;
     public Func<IEnumerable<TRequest>>? Requester { get; init; }
     public Func<TRequest>? RequesterUnique { get; init; }
     public Func<TRequest, TResponse> Executer { get; init; }
-    public Action<TRequest>? AfterExecuter { get; init; }
-    public Action<TRequest>? AfterUpdater { get; init; }
-    public Action? AfterWork { get; init; }
     public Action<TRequest>? Updater { get; init; }
-    public Action<Exception, TRequest>? OnExecuterError { get; init; }
-    public Action<Exception, TRequest>? OnUpdaterError { get; init; }
-    public Func<TRequest, object>? LoggerId { get; init; }
 
     private TResponse? RunExecuter(TRequest? request)
     {
@@ -55,6 +47,7 @@ public class Job<TRequest, TResponse>
                 OnExecuterError(ex, request!);
             }
 
+            Handler.HandleOnExcuterError(ex, RequestName, RequestId);
             return default;
         }
         finally
@@ -81,6 +74,7 @@ public class Job<TRequest, TResponse>
             {
                 OnUpdaterError(ex, request!);
             }
+            Handler.HandleOnUpdaterError(ex, RequestName, RequestId);
         }
         finally
         {
@@ -97,8 +91,9 @@ public class Job<TRequest, TResponse>
         {
             return Requester!();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Handler.HandleOnRequesterError(ex, RequestName, RequestId);
             return Enumerable.Empty<TRequest>();
         }
     }
@@ -109,8 +104,9 @@ public class Job<TRequest, TResponse>
         {
             return RequesterUnique!();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Handler.HandleOnRequesterError(ex, RequestName, RequestId);
             return default;
         }
     }
@@ -133,6 +129,7 @@ public class Job<TRequest, TResponse>
         if (AfterWork is not null)
         {
             AfterWork();
+            Handler.HandleOnAfterWork();
         }
     }
 
