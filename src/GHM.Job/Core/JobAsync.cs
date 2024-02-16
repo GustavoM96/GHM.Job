@@ -1,6 +1,6 @@
 ﻿namespace GHM.Job;
 
-public class JobAsync<TRequest, TResponse> : JobBase<TRequest>
+public class JobAsync<TRequest, TResponse>
 {
     public JobAsync(
         Func<Task<IEnumerable<TRequest>>>? requester,
@@ -18,42 +18,52 @@ public class JobAsync<TRequest, TResponse> : JobBase<TRequest>
         Requester = requester;
         RequesterUnique = requesterUnique;
         Executer = executer;
-        AfterExecuter = afterExecuter;
-        AfterUpdater = afterUpdater;
-        AfterWork = afterWork;
         Updater = updater;
-        OnExecuterError = onExecuterError;
-        OnUpdaterError = onUpdaterError;
-        LoggerId = loggerId;
+        Options = new JobOptions<TRequest>()
+        {
+            AfterExecuter = afterExecuter,
+            AfterUpdater = afterUpdater,
+            AfterWork = afterWork,
+            OnExecuterError = onExecuterError,
+            OnUpdaterError = onUpdaterError,
+            LoggerId = loggerId
+        };
     }
+
+    public JobOptions<TRequest> Options { get; init; }
 
     public Func<Task<IEnumerable<TRequest>>>? Requester { get; init; }
     public Func<Task<TRequest>>? RequesterUnique { get; init; }
     public Func<TRequest, Task<TResponse>> Executer { get; init; }
     public Func<TRequest, Task>? Updater { get; init; }
+    public JobHandler Handler { get; private set; } = default!;
+
+    public void SetHandler(JobHandler handler) => Handler ??= handler;
 
     private async Task<TResponse?> RunExecuter(TRequest? request)
     {
         try
         {
             var response = await Executer(request!);
+            Handler.Success.HandleOnExecuter(Options.RequestName, Options.RequestId);
 
             return response;
         }
         catch (Exception ex)
         {
-            if (OnExecuterError is not null)
+            if (Options.OnExecuterError is not null)
             {
-                OnExecuterError(ex, request!);
+                Options.OnExecuterError(ex, request!);
             }
 
+            Handler.Error.HandleOnExcuter(ex, Options.RequestName, Options.RequestId);
             return default;
         }
         finally
         {
-            if (AfterExecuter is not null)
+            if (Options.AfterExecuter is not null)
             {
-                AfterExecuter(request!);
+                Options.AfterExecuter(request!);
             }
         }
     }
@@ -65,20 +75,22 @@ public class JobAsync<TRequest, TResponse> : JobBase<TRequest>
             if (Updater is not null)
             {
                 await Updater(request!);
+                Handler.Success.HandleOnUpdater(Options.RequestName, Options.RequestId);
             }
         }
         catch (Exception ex)
         {
-            if (OnUpdaterError is not null)
+            if (Options.OnUpdaterError is not null)
             {
-                OnUpdaterError(ex, request!);
+                Options.OnUpdaterError(ex, request!);
             }
+            Handler.Error.HandleOnUpdater(ex, Options.RequestName, Options.RequestId);
         }
         finally
         {
-            if (AfterUpdater is not null)
+            if (Options.AfterUpdater is not null)
             {
-                AfterUpdater(request!);
+                Options.AfterUpdater(request!);
             }
         }
     }
@@ -89,8 +101,9 @@ public class JobAsync<TRequest, TResponse> : JobBase<TRequest>
         {
             return await Requester!();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Handler.Error.HandleOnRequester(ex, Options.RequestName);
             return Enumerable.Empty<TRequest>();
         }
     }
@@ -101,8 +114,9 @@ public class JobAsync<TRequest, TResponse> : JobBase<TRequest>
         {
             return await RequesterUnique!();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Handler.Error.HandleOnRequester(ex, Options.RequestName);
             return default;
         }
     }
@@ -114,6 +128,12 @@ public class JobAsync<TRequest, TResponse> : JobBase<TRequest>
             return default;
         }
 
+        if (Options.LoggerId is not null)
+        {
+            Options.RequestId = Options.LoggerId(request);
+        }
+
+        Handler.Success.HandleOnRequester(Options.RequestName, Options.RequestId);
         var response = await RunExecuter(request);
         await RunUpdater(request);
 
@@ -122,9 +142,9 @@ public class JobAsync<TRequest, TResponse> : JobBase<TRequest>
 
     private void RunAfterWork()
     {
-        if (AfterWork is not null)
+        if (Options.AfterWork is not null)
         {
-            AfterWork();
+            Options.AfterWork();
         }
     }
 

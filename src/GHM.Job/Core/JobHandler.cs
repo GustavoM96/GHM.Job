@@ -1,23 +1,47 @@
 ﻿namespace GHM.Job;
 
-public interface IJobHandler
+public class JobErrorHandlerDefault : IJobErrorHandler
 {
-    public void HandleOnRequesterError(Exception ex, string requestName, object? requestId) { }
+    public void HandleOnRequester(Exception ex, string requestName) { }
 
-    public void HandleOnExcuterError(Exception ex, string requestName, object? requestId) { }
+    public void HandleOnExcuter(Exception ex, string requestName, object? requestId) { }
 
-    public void HandleOnUpdaterError(Exception ex, string requestName, object? requestId) { }
-
-    void HandleOnAfterWork() { }
+    public void HandleOnUpdater(Exception ex, string requestName, object? requestId) { }
 }
 
-public class JobHandler : IJobHandler
+public class JobSuccessHandlerDefault : IJobSuccessHandler
 {
-    public void HandleOnRequesterError(Exception ex, string requestName, object? requestId) { }
+    public void HandleOnRequester(string requestName, object? requestId) { }
 
-    public void HandleOnExcuterError(Exception ex, string requestName, object? requestId) { }
+    public void HandleOnExecuter(string requestName, object? requestId) { }
 
-    public void HandleOnUpdaterError(Exception ex, string requestName, object? requestId) { }
+    public void HandleOnUpdater(string requestName, object? requestId) { }
+}
 
-    public void HandleOnAfterWork() { }
+public class JobServiceHandlerDefault : IJobServiceHandler
+{
+    public void HandleOnAfterWork(DateTime? nextRun, string requestName) { }
+}
+
+public class JobHandler
+{
+    public JobHandler(IJobServiceHandler? service = null, IJobErrorHandler? error = null, IJobSuccessHandler? success = null)
+    {
+        Service = service ?? new JobServiceHandlerDefault();
+        Error = error ?? new JobErrorHandlerDefault();
+        Success = success ?? new JobSuccessHandlerDefault();
+    }
+
+    private JobHandler()
+    {
+        Service = new JobServiceHandlerDefault();
+        Error = new JobErrorHandlerDefault();
+        Success = new JobSuccessHandlerDefault();
+    }
+
+    public IJobServiceHandler Service { get; init; }
+    public IJobErrorHandler Error { get; init; }
+    public IJobSuccessHandler Success { get; init; }
+
+    public static JobHandler Default => new();
 }
