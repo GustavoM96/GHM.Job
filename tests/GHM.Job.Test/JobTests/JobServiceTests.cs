@@ -2,7 +2,7 @@ namespace GHM.Job.Test;
 
 public class JobServiceTests
 {
-    private readonly IJobService<string> _jobService = new JobService<string>(new NowTimeZoneStrategy());
+    private readonly IJobService<string> _jobService = new JobService<string>(new NowTimeZoneStrategy(), JobHandler.Default);
 
     [Fact]
     public async Task Test_ExecuteAsync_ShouldRun_JobDoWork()

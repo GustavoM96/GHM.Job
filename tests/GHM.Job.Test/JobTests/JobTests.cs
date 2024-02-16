@@ -24,6 +24,8 @@ public class JobTests
             afterExecuter: AfterExecuter,
             loggerId: LoggerId
         );
+
+        job.SetHandler(JobHandler.Default);
         job.DoWork();
 
         // Assert
@@ -41,6 +43,8 @@ public class JobTests
 
         // Act
         var job = Job.Create(requester: Requester, executer: Executer);
+
+        job.SetHandler(JobHandler.Default);
         job.DoWork();
 
         // Assert
@@ -67,6 +71,7 @@ public class JobTests
             onExecuterError: OnExecuterError,
             onUpdaterError: OnUpdaterError
         );
+        job.SetHandler(JobHandler.Default);
         job.DoWork();
 
         // Assert

@@ -24,6 +24,7 @@ public class JobAsyncTests
             afterExecuter: AfterExecuter,
             loggerId: LoggerId
         );
+        job.SetHandler(JobHandler.Default);
         await job.DoWork();
 
         // Assert
@@ -41,6 +42,7 @@ public class JobAsyncTests
 
         // Act
         var job = JobAsync.Create(requester: Requester, executer: Executer);
+        job.SetHandler(JobHandler.Default);
         await job.DoWork();
 
         // Assert
@@ -67,6 +69,8 @@ public class JobAsyncTests
             onExecuterError: OnExecuterError,
             onUpdaterError: OnUpdaterError
         );
+
+        job.SetHandler(JobHandler.Default);
         await job.DoWork();
 
         // Assert
