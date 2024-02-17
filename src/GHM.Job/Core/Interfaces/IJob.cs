@@ -2,6 +2,7 @@ namespace GHM.Job;
 
 public interface IJob<TRequest, TResponse>
 {
-    void SetHandler(JobHandler handler);
+    void SetErrorHandler(IJobErrorHandler<TRequest> handler);
+    void SetSuccessHandler(IJobSuccessHandler<TRequest> handler);
     Task DoWork();
 }

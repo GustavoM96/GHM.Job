@@ -1,39 +1,32 @@
 ﻿namespace GHM.Job;
 
-public class Job<TRequest, TResponse> : IJob<TRequest, TResponse>
+public class Job<TRequest, TResponse>
 {
-    public Job(
-        Func<IEnumerable<TRequest>>? requester,
-        Func<TRequest>? requesterUnique,
-        Func<TRequest, TResponse> executer,
-        Action<TRequest>? updater,
-        JobOptions<TRequest> jobOptions
-    )
+    public Job(Func<TRequest, TResponse> executer, Action<TRequest>? updater, JobOptions<TRequest> jobOptions)
     {
-        Requester = requester;
-        RequesterUnique = requesterUnique;
         Executer = executer;
         Updater = updater;
         Options = jobOptions;
     }
 
     public JobOptions<TRequest> Options { get; init; }
-    public Func<IEnumerable<TRequest>>? Requester { get; init; }
-    public Func<TRequest>? RequesterUnique { get; init; }
     public Func<TRequest, TResponse> Executer { get; init; }
     public Action<TRequest>? Updater { get; init; }
-    public JobHandler Handler { get; private set; } = default!;
+    public IJobErrorHandler<TRequest> ErrorHandler { get; private set; } = default!;
+    public IJobSuccessHandler<TRequest> SuccessHandler { get; private set; } = default!;
 
-    public void SetHandler(JobHandler handler) => Handler ??= handler;
+    public void SetErrorHandler(IJobErrorHandler<TRequest> handler) => ErrorHandler ??= handler;
 
-    private TResponse? RunExecuter(TRequest request)
+    public void SetSuccessHandler(IJobSuccessHandler<TRequest> handler) => SuccessHandler ??= handler;
+
+    protected TResponse? RunExecuter(TRequest request)
     {
         TResponse? response = default;
 
         try
         {
             response = Executer(request);
-            Handler.Success.AfterExecuter(Options.RequestName, Options.RequestId);
+            SuccessHandler.AfterExecuter(request, Options.RequestId);
         }
         catch (Exception ex)
         {
@@ -42,7 +35,7 @@ public class Job<TRequest, TResponse> : IJob<TRequest, TResponse>
                 Options.OnExecuterError(ex, request);
             }
 
-            Handler.Error.OnExecuterError(ex, Options.RequestName, Options.RequestId);
+            ErrorHandler.OnExecuterError(ex, request, Options.RequestId);
         }
 
         if (Options.AfterExecuter is not null)
@@ -52,14 +45,14 @@ public class Job<TRequest, TResponse> : IJob<TRequest, TResponse>
         return response;
     }
 
-    private void RunUpdater(TRequest request)
+    protected void RunUpdater(TRequest request)
     {
         try
         {
             if (Updater is not null)
             {
                 Updater(request);
-                Handler.Success.AfterUpdater(Options.RequestName, Options.RequestId);
+                SuccessHandler.AfterUpdater(request, Options.RequestId);
             }
         }
         catch (Exception ex)
@@ -68,7 +61,7 @@ public class Job<TRequest, TResponse> : IJob<TRequest, TResponse>
             {
                 Options.OnUpdaterError(ex, request);
             }
-            Handler.Error.OnUpdaterError(ex, Options.RequestName, Options.RequestId);
+            ErrorHandler.OnUpdaterError(ex, request, Options.RequestId);
         }
 
         if (Options.AfterUpdater is not null)
@@ -77,33 +70,7 @@ public class Job<TRequest, TResponse> : IJob<TRequest, TResponse>
         }
     }
 
-    private IEnumerable<TRequest> RunRequester()
-    {
-        try
-        {
-            return Requester!();
-        }
-        catch (Exception ex)
-        {
-            Handler.Error.OnRequesterError(ex, Options.RequestName);
-            return Enumerable.Empty<TRequest>();
-        }
-    }
-
-    private TRequest? RunRequesterUnique()
-    {
-        try
-        {
-            return RequesterUnique!();
-        }
-        catch (Exception ex)
-        {
-            Handler.Error.OnRequesterError(ex, Options.RequestName);
-            return default;
-        }
-    }
-
-    private TResponse? RunRequest(TRequest? request)
+    protected TResponse? RunRequest(TRequest? request)
     {
         if (request is null)
         {
@@ -114,7 +81,7 @@ public class Job<TRequest, TResponse> : IJob<TRequest, TResponse>
             Options.RequestId = Options.LoggerId(request);
         }
 
-        Handler.Success.AfterRequester(Options.RequestName, Options.RequestId);
+        SuccessHandler.AfterRequester(request, Options.RequestId);
 
         var response = RunExecuter(request);
         RunUpdater(request);
@@ -122,7 +89,7 @@ public class Job<TRequest, TResponse> : IJob<TRequest, TResponse>
         return response;
     }
 
-    private Task RunAfterWork()
+    protected Task RunAfterWork()
     {
         if (Options.AfterWork is not null)
         {
@@ -131,25 +98,83 @@ public class Job<TRequest, TResponse> : IJob<TRequest, TResponse>
 
         return Task.CompletedTask;
     }
+}
+
+public class JobUniqueRequest<TRequest, TResponse> : Job<TRequest, TResponse>, IJob<TRequest, TResponse>
+{
+    public JobUniqueRequest(
+        Func<TRequest> requester,
+        Func<TRequest, TResponse> executer,
+        Action<TRequest>? updater,
+        JobOptions<TRequest> jobOptions
+    )
+        : base(executer, updater, jobOptions)
+    {
+        Requester = requester;
+    }
+
+    public Func<TRequest> Requester { get; init; }
+
+    private TRequest? RunRequester()
+    {
+        try
+        {
+            return Requester();
+        }
+        catch (Exception ex)
+        {
+            ErrorHandler.OnRequesterError(ex);
+            return default;
+        }
+    }
 
     public Task DoWork()
     {
-        if (RequesterUnique is not null)
+        var request = RunRequester();
+        RunRequest(request);
+        RunAfterWork();
+
+        return Task.CompletedTask;
+    }
+}
+
+public class JobRequest<TRequest, TResponse> : Job<TRequest, TResponse>, IJob<TRequest, TResponse>
+{
+    public JobRequest(
+        Func<IEnumerable<TRequest>> requester,
+        Func<TRequest, TResponse> executer,
+        Action<TRequest>? updater,
+        JobOptions<TRequest> jobOptions
+    )
+        : base(executer, updater, jobOptions)
+    {
+        Requester = requester;
+    }
+
+    public Func<IEnumerable<TRequest>> Requester { get; init; }
+
+    private IEnumerable<TRequest> RunRequester()
+    {
+        try
         {
-            var request = RunRequesterUnique();
+            return Requester();
+        }
+        catch (Exception ex)
+        {
+            ErrorHandler.OnRequesterError(ex);
+            return Enumerable.Empty<TRequest>();
+        }
+    }
+
+    public Task DoWork()
+    {
+        var requests = RunRequester();
+        foreach (var request in requests)
+        {
             RunRequest(request);
-            return RunAfterWork();
         }
+        RunAfterWork();
 
-        if (Requester is not null)
-        {
-            var requests = RunRequester();
-            foreach (var request in requests)
-            {
-                RunRequest(request);
-            }
-        }
-
-        return RunAfterWork();
+        return Task.CompletedTask;
     }
 }

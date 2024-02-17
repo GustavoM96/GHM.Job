@@ -9,17 +9,17 @@ public static class JobFactory
         JobOptions<TRequest>? jobOptions = null
     )
     {
-        return new Job<TRequest, TResponse>(requester, null, executer, updater, jobOptions ?? new());
+        return new JobRequest<TRequest, TResponse>(requester, executer, updater, jobOptions ?? new());
     }
 
-    public static IJob<TRequest, TResponse> CreateUniqueRequest<TRequest, TResponse>(
+    public static IJob<TRequest, TResponse> Create<TRequest, TResponse>(
         Func<TRequest> requester,
         Func<TRequest, TResponse> executer,
         Action<TRequest>? updater = null,
         JobOptions<TRequest>? jobOptions = null
     )
     {
-        return new Job<TRequest, TResponse>(null, requester, executer, updater, jobOptions ?? new());
+        return new JobUniqueRequest<TRequest, TResponse>(requester, executer, updater, jobOptions ?? new());
     }
 }
 
@@ -32,17 +32,17 @@ public static class JobAsyncFactory
         JobOptions<TRequest>? jobOptions = null
     )
     {
-        return new JobAsync<TRequest, TResponse>(requester, null, executer, updater, jobOptions ?? new());
+        return new JobRequestAsync<TRequest, TResponse>(requester, executer, updater, jobOptions ?? new());
     }
 
     public static IJob<TRequest, TResponse> Create<TRequest, TResponse>(
-        Func<Task<TRequest>> requesterUnique,
+        Func<Task<TRequest>> requester,
         Func<TRequest, Task<TResponse>> executer,
         Func<TRequest, Task>? updater = null,
         JobOptions<TRequest>? jobOptions = null
     )
     {
-        return new JobAsync<TRequest, TResponse>(null, requesterUnique, executer, updater, jobOptions ?? new());
+        return new JobUniqueRequestAsync<TRequest, TResponse>(requester, executer, updater, jobOptions ?? new());
     }
 }
 

@@ -1,24 +1,31 @@
 ﻿namespace GHM.Job;
 
-public interface IJobErrorHandler
+public interface IJobHandler<TRequest>
 {
-    void OnRequesterError(Exception ex, string requestName);
-
-    void OnExecuterError(Exception ex, string requestName, object? requestId);
-
-    void OnUpdaterError(Exception ex, string requestName, object? requestId);
+    IJobServiceHandler<TRequest> Service { get; init; }
+    IJobErrorHandler<TRequest> Error { get; init; }
+    IJobSuccessHandler<TRequest> Success { get; init; }
 }
 
-public interface IJobServiceHandler
+public interface IJobErrorHandler<TRequest>
 {
-    Task<JobServiceResponse> HandleWork<TRequest>(Func<Task<JobServiceResponse>> runWork);
+    void OnRequesterError(Exception ex);
+
+    void OnExecuterError(Exception ex, TRequest request, object? requestId);
+
+    void OnUpdaterError(Exception ex, TRequest request, object? requestId);
 }
 
-public interface IJobSuccessHandler
+public interface IJobServiceHandler<TRequest>
 {
-    void AfterRequester(string requestName, object? requestId);
+    Task<JobServiceResponse> HandleWork(Func<Task<JobServiceResponse>> runWork);
+}
 
-    void AfterExecuter(string requestName, object? requestId);
+public interface IJobSuccessHandler<TRequest>
+{
+    void AfterRequester(TRequest request, object? requestId);
 
-    void AfterUpdater(string requestName, object? requestId);
+    void AfterExecuter(TRequest request, object? requestId);
+
+    void AfterUpdater(TRequest request, object? requestId);
 }
