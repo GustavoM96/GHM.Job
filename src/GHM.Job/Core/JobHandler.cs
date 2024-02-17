@@ -2,25 +2,25 @@
 
 public class JobErrorHandlerDefault : IJobErrorHandler
 {
-    public void HandleOnRequester(Exception ex, string requestName) { }
+    public void OnRequesterError(Exception ex, string requestName) { }
 
-    public void HandleOnExcuter(Exception ex, string requestName, object? requestId) { }
+    public void OnExecuterError(Exception ex, string requestName, object? requestId) { }
 
-    public void HandleOnUpdater(Exception ex, string requestName, object? requestId) { }
+    public void OnUpdaterError(Exception ex, string requestName, object? requestId) { }
 }
 
 public class JobSuccessHandlerDefault : IJobSuccessHandler
 {
-    public void HandleOnRequester(string requestName, object? requestId) { }
+    public void AfterRequester(string requestName, object? requestId) { }
 
-    public void HandleOnExecuter(string requestName, object? requestId) { }
+    public void AfterExecuter(string requestName, object? requestId) { }
 
-    public void HandleOnUpdater(string requestName, object? requestId) { }
+    public void AfterUpdater(string requestName, object? requestId) { }
 }
 
 public class JobServiceHandlerDefault : IJobServiceHandler
 {
-    public void HandleOnAfterWork(DateTime? nextRun, string requestName) { }
+    public void HandleAfterWork(DateTime? nextRun, string requestName) { }
 }
 
 public class JobHandler

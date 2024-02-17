@@ -3,7 +3,7 @@ namespace GHM.Job.Test;
 public class JobTests
 {
     [Fact]
-    public void Test_DoWork_When_PassAllFunctions_ShouldRun_Parameters()
+    public async Task Test_DoWork_When_PassAllFunctions_ShouldRun_Parameters()
     {
         // Arrange
         var result = "processing";
@@ -26,14 +26,14 @@ public class JobTests
         );
 
         job.SetHandler(JobHandler.Default);
-        job.DoWork();
+        await job.DoWork();
 
         // Assert
         Assert.Equal("processing => data => Executer => AfterExecuter => Updater => AfterWork", result);
     }
 
     [Fact]
-    public void Test_DoWork_WhenPassOnlyExecuter_ShouldRun_Executer()
+    public async Task Test_DoWork_WhenPassOnlyExecuter_ShouldRun_Executer()
     {
         // Arrange
         var result = "processing";
@@ -45,14 +45,14 @@ public class JobTests
         var job = Job.Create(requester: Requester, executer: Executer);
 
         job.SetHandler(JobHandler.Default);
-        job.DoWork();
+        await job.DoWork();
 
         // Assert
         Assert.Equal("processing => data1 => Executer => data2 => Executer", result);
     }
 
     [Fact]
-    public void Test_DoWork_WhenThrowException_ShouldRun_OnError()
+    public async Task Test_DoWork_WhenThrowException_ShouldRun_OnError()
     {
         // Arrange
         var result = "processing";
@@ -72,7 +72,7 @@ public class JobTests
             onUpdaterError: OnUpdaterError
         );
         job.SetHandler(JobHandler.Default);
-        job.DoWork();
+        await job.DoWork();
 
         // Assert
         Assert.Equal("processing => data => Error at Executer => data => Error at Updater", result);

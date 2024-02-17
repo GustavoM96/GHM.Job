@@ -2,23 +2,23 @@
 
 public interface IJobErrorHandler
 {
-    void HandleOnRequester(Exception ex, string requestName);
+    void OnRequesterError(Exception ex, string requestName);
 
-    void HandleOnExcuter(Exception ex, string requestName, object? requestId);
+    void OnExecuterError(Exception ex, string requestName, object? requestId);
 
-    void HandleOnUpdater(Exception ex, string requestName, object? requestId);
+    void OnUpdaterError(Exception ex, string requestName, object? requestId);
 }
 
 public interface IJobServiceHandler
 {
-    void HandleOnAfterWork(DateTime? nextRun, string requestName);
+    void HandleAfterWork(DateTime? nextRun, string requestName);
 }
 
 public interface IJobSuccessHandler
 {
-    void HandleOnRequester(string requestName, object? requestId);
+    void AfterRequester(string requestName, object? requestId);
 
-    void HandleOnExecuter(string requestName, object? requestId);
+    void AfterExecuter(string requestName, object? requestId);
 
-    void HandleOnUpdater(string requestName, object? requestId);
+    void AfterUpdater(string requestName, object? requestId);
 }
