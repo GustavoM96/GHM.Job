@@ -14,7 +14,7 @@ public class JobAsyncServiceTests
         Task<string> Executer(string data) => Task.FromResult(result += data + " => Executer");
 
         // Act
-        var job = JobAsync.Create(requesterUnique: Requester, executer: Executer);
+        var job = JobAsyncFactory.Create(requesterUnique: Requester, executer: Executer);
         await _jobService.ExecuteAsync(job);
 
         // Assert
@@ -35,7 +35,7 @@ public class JobAsyncServiceTests
         source.Cancel();
 
         // Act
-        var job = JobAsync.Create(requesterUnique: Requester, executer: Executer);
+        var job = JobAsyncFactory.Create(requesterUnique: Requester, executer: Executer);
         async Task Run() => await _jobService.ExecuteAsync(job, token);
 
         // Assert
@@ -62,11 +62,10 @@ public class JobAsyncServiceTests
         }
 
         // Act
-        var job = JobAsync.Create(
+        var job = JobAsyncFactory.Create(
             requesterUnique: Requester,
             executer: Executer,
-            afterExecuter: AfterExecuter,
-            afterWork: AfterWork
+            jobOptions: new(afterExecuter: AfterExecuter, afterWork: AfterWork)
         );
         async Task Run() => await _jobService.ExecuteAsync(job, TimeSpan.FromSeconds(0.1), token);
 
@@ -95,11 +94,10 @@ public class JobAsyncServiceTests
         }
 
         // Act
-        var job = JobAsync.Create(
+        var job = JobAsyncFactory.Create(
             requesterUnique: Requester,
             executer: Executer,
-            afterExecuter: AfterExecuter,
-            afterWork: AfterWork
+            jobOptions: new(afterExecuter: AfterExecuter, afterWork: AfterWork)
         );
         async Task Run() => await _jobService.ExecuteAsync(job, "* * * * *", token);
 

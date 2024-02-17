@@ -16,13 +16,11 @@ public class JobTests
         string LoggerId(string data) => data;
 
         // Act
-        var job = Job.Create(
-            requesterUnique: Requester,
+        var job = JobFactory.CreateUniqueRequest(
+            requester: Requester,
             executer: Executer,
             updater: Updater,
-            afterWork: AfterWork,
-            afterExecuter: AfterExecuter,
-            loggerId: LoggerId
+            jobOptions: new(afterWork: AfterWork, afterExecuter: AfterExecuter, loggerId: LoggerId)
         );
 
         job.SetHandler(JobHandler.Default);
@@ -42,7 +40,7 @@ public class JobTests
         string Executer(string data) => result += data + " => Executer";
 
         // Act
-        var job = Job.Create(requester: Requester, executer: Executer);
+        var job = JobFactory.Create(requester: Requester, executer: Executer);
 
         job.SetHandler(JobHandler.Default);
         await job.DoWork();
@@ -64,12 +62,11 @@ public class JobTests
         void OnUpdaterError(Exception exception, string data) => result += exception.Message;
 
         // Act
-        var job = Job.Create(
-            requesterUnique: Requester,
+        var job = JobFactory.CreateUniqueRequest(
+            requester: Requester,
             executer: Executer,
             updater: Updater,
-            onExecuterError: OnExecuterError,
-            onUpdaterError: OnUpdaterError
+            jobOptions: new(onExecuterError: OnExecuterError, onUpdaterError: OnUpdaterError)
         );
         job.SetHandler(JobHandler.Default);
         await job.DoWork();

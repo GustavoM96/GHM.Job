@@ -14,7 +14,7 @@ public class JobServiceTests
         string Executer(string data) => result += data + " => Executer";
 
         // Act
-        var job = Job.Create(requesterUnique: Requester, executer: Executer);
+        var job = JobFactory.CreateUniqueRequest(requester: Requester, executer: Executer);
         await _jobService.ExecuteAsync(job);
 
         // Assert
@@ -35,7 +35,7 @@ public class JobServiceTests
         source.Cancel();
 
         // Act
-        var job = Job.Create(requesterUnique: Requester, executer: Executer);
+        var job = JobFactory.CreateUniqueRequest(requester: Requester, executer: Executer);
         async Task Run() => await _jobService.ExecuteAsync(job, token);
 
         // Assert
@@ -62,11 +62,10 @@ public class JobServiceTests
         }
 
         // Act
-        var job = Job.Create(
-            requesterUnique: Requester,
+        var job = JobFactory.CreateUniqueRequest(
+            requester: Requester,
             executer: Executer,
-            afterExecuter: AfterExecuter,
-            afterWork: AfterWork
+            jobOptions: new(afterExecuter: AfterExecuter, afterWork: AfterWork)
         );
         async Task Run() => await _jobService.ExecuteAsync(job, TimeSpan.FromSeconds(0.1), token);
 
@@ -95,11 +94,10 @@ public class JobServiceTests
         }
 
         // Act
-        var job = Job.Create(
-            requesterUnique: Requester,
+        var job = JobFactory.CreateUniqueRequest(
+            requester: Requester,
             executer: Executer,
-            afterExecuter: AfterExecuter,
-            afterWork: AfterWork
+            jobOptions: new(afterExecuter: AfterExecuter, afterWork: AfterWork)
         );
         async Task Run() => await _jobService.ExecuteAsync(job, "* * * * *", token);
 

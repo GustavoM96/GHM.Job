@@ -16,14 +16,14 @@ public class JobAsyncTests
         string LoggerId(string data) => data;
 
         // Act
-        var job = JobAsync.Create(
+
+        var job = JobAsyncFactory.Create(
             requesterUnique: Requester,
             executer: Executer,
             updater: Updater,
-            afterWork: AfterWork,
-            afterExecuter: AfterExecuter,
-            loggerId: LoggerId
+            jobOptions: new(afterExecuter: AfterExecuter, afterWork: AfterWork, loggerId: LoggerId)
         );
+
         job.SetHandler(JobHandler.Default);
         await job.DoWork();
 
@@ -41,7 +41,7 @@ public class JobAsyncTests
         Task<string> Executer(string data) => Task.FromResult(result += data + " => Executer");
 
         // Act
-        var job = JobAsync.Create(requester: Requester, executer: Executer);
+        var job = JobAsyncFactory.Create(requester: Requester, executer: Executer);
         job.SetHandler(JobHandler.Default);
         await job.DoWork();
 
@@ -62,12 +62,11 @@ public class JobAsyncTests
         void OnUpdaterError(Exception exception, string data) => result += exception.Message;
 
         // Act
-        var job = JobAsync.Create(
+        var job = JobAsyncFactory.Create(
             requesterUnique: Requester,
             executer: Executer,
             updater: Updater,
-            onExecuterError: OnExecuterError,
-            onUpdaterError: OnUpdaterError
+            jobOptions: new(onExecuterError: OnExecuterError, onUpdaterError: OnUpdaterError)
         );
 
         job.SetHandler(JobHandler.Default);
