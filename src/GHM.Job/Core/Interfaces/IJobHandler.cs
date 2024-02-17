@@ -18,7 +18,7 @@ public interface IJobErrorHandler<TRequest>
 
 public interface IJobServiceHandler<TRequest>
 {
-    Task<JobServiceResponse> HandleWork(Func<Task<JobServiceResponse>> runWork);
+    Task<JobServiceResponse<TRequest>> HandleWork(Func<Task<JobServiceResponse<TRequest>>> runWork);
 }
 
 public interface IJobSuccessHandler<TRequest>

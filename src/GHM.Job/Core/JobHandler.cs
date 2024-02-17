@@ -20,7 +20,8 @@ public class JobSuccessHandlerDefault<TRequest> : IJobSuccessHandler<TRequest>
 
 public class JobServiceHandlerDefault<TRequest> : IJobServiceHandler<TRequest>
 {
-    public async Task<JobServiceResponse> HandleWork(Func<Task<JobServiceResponse>> runWork) => await runWork();
+    public async Task<JobServiceResponse<TRequest>> HandleWork(Func<Task<JobServiceResponse<TRequest>>> runWork) =>
+        await runWork();
 }
 
 public class JobHandler<TRequest> : IJobHandler<TRequest>

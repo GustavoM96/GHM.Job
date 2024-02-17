@@ -131,12 +131,14 @@ public class JobUniqueRequestAsync<TRequest, TResponse> : JobAsync<TRequest, TRe
         }
     }
 
-    public async Task DoWork()
+    public async Task<IEnumerable<JobResponse<TRequest>>> DoWork()
     {
         var request = await RunRequester();
-        await RunRequest(request);
+        var response = await RunRequest(request);
         RunAfterWork();
-        return;
+
+        var jobResponse = new JobResponse<TRequest>(request, Options.RequestId, response);
+        return new JobResponse<TRequest>[1] { jobResponse };
     }
 }
 
@@ -168,13 +170,19 @@ public class JobRequestAsync<TRequest, TResponse> : JobAsync<TRequest, TResponse
         }
     }
 
-    public async Task DoWork()
+    public async Task<IEnumerable<JobResponse<TRequest>>> DoWork()
     {
-        var requests = await RunRequester();
+        var requests = (await RunRequester()).ToList();
+        var jobResponses = new List<JobResponse<TRequest>>(requests.Count);
+
         foreach (var request in requests)
         {
-            await RunRequest(request);
+            var response = await RunRequest(request);
+            var jobResponse = new JobResponse<TRequest>(request, Options.RequestId, response);
+            jobResponses.Add(jobResponse);
         }
+
         RunAfterWork();
+        return jobResponses;
     }
 }

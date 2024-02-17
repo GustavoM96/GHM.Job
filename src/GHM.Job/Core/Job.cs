@@ -128,13 +128,16 @@ public class JobUniqueRequest<TRequest, TResponse> : Job<TRequest, TResponse>, I
         }
     }
 
-    public Task DoWork()
+    public Task<IEnumerable<JobResponse<TRequest>>> DoWork()
     {
         var request = RunRequester();
-        RunRequest(request);
+        var response = RunRequest(request);
         RunAfterWork();
 
-        return Task.CompletedTask;
+        var jobResponse = new JobResponse<TRequest>(request, Options.RequestId, response);
+        var jobResponses = new JobResponse<TRequest>[1] { jobResponse };
+
+        return Task.FromResult<IEnumerable<JobResponse<TRequest>>>(jobResponses);
     }
 }
 
@@ -166,15 +169,19 @@ public class JobRequest<TRequest, TResponse> : Job<TRequest, TResponse>, IJob<TR
         }
     }
 
-    public Task DoWork()
+    public Task<IEnumerable<JobResponse<TRequest>>> DoWork()
     {
-        var requests = RunRequester();
+        var requests = RunRequester().ToList();
+        var jobResponses = new List<JobResponse<TRequest>>(requests.Count);
+
         foreach (var request in requests)
         {
-            RunRequest(request);
+            var response = RunRequest(request);
+            var jobResponse = new JobResponse<TRequest>(request, Options.RequestId, response);
+            jobResponses.Add(jobResponse);
         }
-        RunAfterWork();
 
-        return Task.CompletedTask;
+        RunAfterWork();
+        return Task.FromResult<IEnumerable<JobResponse<TRequest>>>(jobResponses);
     }
 }

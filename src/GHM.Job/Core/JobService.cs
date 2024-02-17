@@ -33,10 +33,10 @@ public class JobService<TRequest> : IJobService<TRequest>
 
         while (!token.IsCancellationRequested)
         {
-            async Task<JobServiceResponse> Work()
+            async Task<JobServiceResponse<TRequest>> Work()
             {
-                await Task.Run(job.DoWork, token);
-                return new JobServiceResponse(_timeZoneStrategy.Now.Add(interval));
+                var response = await Task.Run(job.DoWork, token);
+                return new JobServiceResponse<TRequest>(_timeZoneStrategy.Now.Add(interval), interval, response);
             }
 
             await _serviceHandler.HandleWork(Work);
@@ -49,10 +49,10 @@ public class JobService<TRequest> : IJobService<TRequest>
         job.SetErrorHandler(_errorHandler);
         job.SetSuccessHandler(_successHandler);
 
-        async Task<JobServiceResponse> Work()
+        async Task<JobServiceResponse<TRequest>> Work()
         {
-            await Task.Run(job.DoWork, token);
-            return new JobServiceResponse(null);
+            var response = await Task.Run(job.DoWork, token);
+            return new JobServiceResponse<TRequest>(null, null, response);
         }
 
         await _serviceHandler.HandleWork(Work);
@@ -70,12 +70,12 @@ public class JobService<TRequest> : IJobService<TRequest>
         {
             if (_timeZoneStrategy.Now > nextOccurrence)
             {
-                async Task<JobServiceResponse> Work()
+                async Task<JobServiceResponse<TRequest>> Work()
                 {
-                    await Task.Run(job.DoWork, token);
+                    var response = await Task.Run(job.DoWork, token);
 
                     nextOccurrence = crontabSchedule.GetNextOccurrence(_timeZoneStrategy.Now);
-                    return new JobServiceResponse(nextOccurrence);
+                    return new JobServiceResponse<TRequest>(nextOccurrence, null, response);
                 }
 
                 await _serviceHandler.HandleWork(Work);
