@@ -18,13 +18,15 @@ public class JobAsyncTests
         // Act
 
         var job = JobAsyncFactory.Create(
-            requesterUnique: Requester,
+            requester: Requester,
             executer: Executer,
             updater: Updater,
             jobOptions: new(afterExecuter: AfterExecuter, afterWork: AfterWork, loggerId: LoggerId)
         );
 
-        job.SetHandler(JobHandler.Default);
+        job.SetErrorHandler(JobHandler<string>.Default.Error);
+        job.SetSuccessHandler(JobHandler<string>.Default.Success);
+
         await job.DoWork();
 
         // Assert
@@ -42,7 +44,10 @@ public class JobAsyncTests
 
         // Act
         var job = JobAsyncFactory.Create(requester: Requester, executer: Executer);
-        job.SetHandler(JobHandler.Default);
+
+        job.SetErrorHandler(JobHandler<string>.Default.Error);
+        job.SetSuccessHandler(JobHandler<string>.Default.Success);
+
         await job.DoWork();
 
         // Assert
@@ -63,13 +68,15 @@ public class JobAsyncTests
 
         // Act
         var job = JobAsyncFactory.Create(
-            requesterUnique: Requester,
+            requester: Requester,
             executer: Executer,
             updater: Updater,
             jobOptions: new(onExecuterError: OnExecuterError, onUpdaterError: OnUpdaterError)
         );
 
-        job.SetHandler(JobHandler.Default);
+        job.SetErrorHandler(JobHandler<string>.Default.Error);
+        job.SetSuccessHandler(JobHandler<string>.Default.Success);
+
         await job.DoWork();
 
         // Assert

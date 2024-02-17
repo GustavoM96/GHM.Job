@@ -2,7 +2,10 @@ namespace GHM.Job.Test;
 
 public class JobServiceTests
 {
-    private readonly IJobService<string> _jobService = new JobService<string>(new NowTimeZoneStrategy(), JobHandler.Default);
+    private readonly IJobService<string> _jobService = new JobService<string>(
+        new NowTimeZoneStrategy(),
+        JobHandler<string>.Default
+    );
 
     [Fact]
     public async Task Test_ExecuteAsync_ShouldRun_JobDoWork()
@@ -14,7 +17,7 @@ public class JobServiceTests
         string Executer(string data) => result += data + " => Executer";
 
         // Act
-        var job = JobFactory.CreateUniqueRequest(requester: Requester, executer: Executer);
+        var job = JobFactory.Create(requester: Requester, executer: Executer);
         await _jobService.ExecuteAsync(job);
 
         // Assert
@@ -35,7 +38,7 @@ public class JobServiceTests
         source.Cancel();
 
         // Act
-        var job = JobFactory.CreateUniqueRequest(requester: Requester, executer: Executer);
+        var job = JobFactory.Create(requester: Requester, executer: Executer);
         async Task Run() => await _jobService.ExecuteAsync(job, token);
 
         // Assert
@@ -62,7 +65,7 @@ public class JobServiceTests
         }
 
         // Act
-        var job = JobFactory.CreateUniqueRequest(
+        var job = JobFactory.Create(
             requester: Requester,
             executer: Executer,
             jobOptions: new(afterExecuter: AfterExecuter, afterWork: AfterWork)
@@ -94,7 +97,7 @@ public class JobServiceTests
         }
 
         // Act
-        var job = JobFactory.CreateUniqueRequest(
+        var job = JobFactory.Create(
             requester: Requester,
             executer: Executer,
             jobOptions: new(afterExecuter: AfterExecuter, afterWork: AfterWork)

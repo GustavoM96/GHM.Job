@@ -16,14 +16,16 @@ public class JobTests
         string LoggerId(string data) => data;
 
         // Act
-        var job = JobFactory.CreateUniqueRequest(
+        var job = JobFactory.Create(
             requester: Requester,
             executer: Executer,
             updater: Updater,
             jobOptions: new(afterWork: AfterWork, afterExecuter: AfterExecuter, loggerId: LoggerId)
         );
 
-        job.SetHandler(JobHandler.Default);
+        job.SetErrorHandler(JobHandler<string>.Default.Error);
+        job.SetSuccessHandler(JobHandler<string>.Default.Success);
+
         await job.DoWork();
 
         // Assert
@@ -42,7 +44,9 @@ public class JobTests
         // Act
         var job = JobFactory.Create(requester: Requester, executer: Executer);
 
-        job.SetHandler(JobHandler.Default);
+        job.SetErrorHandler(JobHandler<string>.Default.Error);
+        job.SetSuccessHandler(JobHandler<string>.Default.Success);
+
         await job.DoWork();
 
         // Assert
@@ -62,13 +66,16 @@ public class JobTests
         void OnUpdaterError(Exception exception, string data) => result += exception.Message;
 
         // Act
-        var job = JobFactory.CreateUniqueRequest(
+        var job = JobFactory.Create(
             requester: Requester,
             executer: Executer,
             updater: Updater,
             jobOptions: new(onExecuterError: OnExecuterError, onUpdaterError: OnUpdaterError)
         );
-        job.SetHandler(JobHandler.Default);
+
+        job.SetErrorHandler(JobHandler<string>.Default.Error);
+        job.SetSuccessHandler(JobHandler<string>.Default.Success);
+
         await job.DoWork();
 
         // Assert
