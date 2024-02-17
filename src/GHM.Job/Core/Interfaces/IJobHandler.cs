@@ -11,7 +11,7 @@ public interface IJobErrorHandler
 
 public interface IJobServiceHandler
 {
-    void HandleAfterWork(DateTime? nextRun, string requestName);
+    Task<JobServiceResponse> HandleWork<TRequest>(Func<Task<JobServiceResponse>> runWork);
 }
 
 public interface IJobSuccessHandler

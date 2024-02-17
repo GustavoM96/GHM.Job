@@ -6,7 +6,6 @@ public class JobService<TRequest> : IJobService<TRequest>
 {
     private readonly ITimeZoneStrategy _timeZoneStrategy;
     private readonly JobHandler _jobHandler;
-    private readonly string _requestName = typeof(TRequest).Name;
 
     public JobService(ITimeZoneStrategy timeZoneStrategy, JobHandler jobHandler)
     {
@@ -24,8 +23,13 @@ public class JobService<TRequest> : IJobService<TRequest>
 
         while (!token.IsCancellationRequested)
         {
-            await Task.Run(job.DoWork, token);
-            _jobHandler.Service.HandleAfterWork(_timeZoneStrategy.Now.Add(interval), _requestName);
+            async Task<JobServiceResponse> Work()
+            {
+                await Task.Run(job.DoWork, token);
+                return new JobServiceResponse(_timeZoneStrategy.Now.Add(interval));
+            }
+
+            await _jobHandler.Service.HandleWork<TRequest>(Work);
             await Task.Delay(interval, token);
         }
     }
@@ -34,8 +38,13 @@ public class JobService<TRequest> : IJobService<TRequest>
     {
         job.SetHandler(_jobHandler);
 
-        await Task.Run(job.DoWork, token);
-        _jobHandler.Service.HandleAfterWork(null, _requestName);
+        async Task<JobServiceResponse> Work()
+        {
+            await Task.Run(job.DoWork, token);
+            return new JobServiceResponse(null);
+        }
+
+        await _jobHandler.Service.HandleWork<TRequest>(Work);
     }
 
     public async Task ExecuteAsync<TResponse>(IJob<TRequest, TResponse> job, string cron, CancellationToken token = default)
@@ -49,9 +58,15 @@ public class JobService<TRequest> : IJobService<TRequest>
         {
             if (_timeZoneStrategy.Now > nextOccurrence)
             {
-                await Task.Run(job.DoWork, token);
-                nextOccurrence = crontabSchedule.GetNextOccurrence(_timeZoneStrategy.Now);
-                _jobHandler.Service.HandleAfterWork(nextOccurrence, _requestName);
+                async Task<JobServiceResponse> Work()
+                {
+                    await Task.Run(job.DoWork, token);
+
+                    nextOccurrence = crontabSchedule.GetNextOccurrence(_timeZoneStrategy.Now);
+                    return new JobServiceResponse(nextOccurrence);
+                }
+
+                var result = await _jobHandler.Service.HandleWork<TRequest>(Work);
             }
 
             await Task.Delay(1000, token);

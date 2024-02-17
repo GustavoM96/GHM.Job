@@ -20,7 +20,7 @@ public class JobSuccessHandlerDefault : IJobSuccessHandler
 
 public class JobServiceHandlerDefault : IJobServiceHandler
 {
-    public void HandleAfterWork(DateTime? nextRun, string requestName) { }
+    public async Task<JobServiceResponse> HandleWork<TRequest>(Func<Task<JobServiceResponse>> runWork) => await runWork();
 }
 
 public class JobHandler
