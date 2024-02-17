@@ -3,8 +3,10 @@ namespace GHM.Job.Test;
 public class JobAsyncServiceTests
 {
     private readonly IJobService<string> _jobService = new JobService<string>(
-        new NowTimeZoneStrategy(),
-        JobHandler<string>.Default
+        new UtcAddingHoursTimeZoneStrategy(-3),
+        JobHandler<string>.Default.Error,
+        JobHandler<string>.Default.Success,
+        JobHandler<string>.Default.Service
     );
 
     [Fact]
