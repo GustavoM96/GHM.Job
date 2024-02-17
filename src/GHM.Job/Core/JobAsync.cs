@@ -6,28 +6,15 @@ public class JobAsync<TRequest, TResponse> : IJob<TRequest, TResponse>
         Func<Task<IEnumerable<TRequest>>>? requester,
         Func<Task<TRequest>>? requesterUnique,
         Func<TRequest, Task<TResponse>> executer,
-        Action<TRequest>? afterExecuter,
-        Action<TRequest>? afterUpdater,
-        Action? afterWork,
         Func<TRequest, Task>? updater,
-        Action<Exception, TRequest>? onExecuterError,
-        Action<Exception, TRequest>? onUpdaterError,
-        Func<TRequest, object>? loggerId
+        JobOptions<TRequest> jobOptions
     )
     {
         Requester = requester;
         RequesterUnique = requesterUnique;
         Executer = executer;
         Updater = updater;
-        Options = new JobOptions<TRequest>()
-        {
-            AfterExecuter = afterExecuter,
-            AfterUpdater = afterUpdater,
-            AfterWork = afterWork,
-            OnExecuterError = onExecuterError,
-            OnUpdaterError = onUpdaterError,
-            LoggerId = loggerId
-        };
+        Options = jobOptions;
     }
 
     public JobOptions<TRequest> Options { get; init; }
@@ -167,60 +154,5 @@ public class JobAsync<TRequest, TResponse> : IJob<TRequest, TResponse>
             }
             RunAfterWork();
         }
-    }
-}
-
-public static class JobAsync
-{
-    public static JobAsync<TRequest, TResponse> Create<TRequest, TResponse>(
-        Func<Task<IEnumerable<TRequest>>> requester,
-        Func<TRequest, Task<TResponse>> executer,
-        Func<TRequest, Task>? updater = null,
-        Action? afterWork = null,
-        Action<TRequest>? afterExecuter = null,
-        Action<TRequest>? afterUpdater = null,
-        Action<Exception, TRequest>? onExecuterError = null,
-        Action<Exception, TRequest>? onUpdaterError = null,
-        Func<TRequest, object>? loggerId = null
-    )
-    {
-        return new JobAsync<TRequest, TResponse>(
-            requester,
-            null,
-            executer,
-            afterExecuter,
-            afterUpdater,
-            afterWork,
-            updater,
-            onExecuterError,
-            onUpdaterError,
-            loggerId
-        );
-    }
-
-    public static IJob<TRequest, TResponse> Create<TRequest, TResponse>(
-        Func<Task<TRequest>> requesterUnique,
-        Func<TRequest, Task<TResponse>> executer,
-        Func<TRequest, Task>? updater = null,
-        Action? afterWork = null,
-        Action<TRequest>? afterExecuter = null,
-        Action<TRequest>? afterUpdater = null,
-        Action<Exception, TRequest>? onExecuterError = null,
-        Action<Exception, TRequest>? onUpdaterError = null,
-        Func<TRequest, object>? loggerId = null
-    )
-    {
-        return new JobAsync<TRequest, TResponse>(
-            null,
-            requesterUnique,
-            executer,
-            afterExecuter,
-            afterUpdater,
-            afterWork,
-            updater,
-            onExecuterError,
-            onUpdaterError,
-            loggerId
-        );
     }
 }

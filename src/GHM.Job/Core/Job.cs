@@ -6,28 +6,15 @@ public class Job<TRequest, TResponse> : IJob<TRequest, TResponse>
         Func<IEnumerable<TRequest>>? requester,
         Func<TRequest>? requesterUnique,
         Func<TRequest, TResponse> executer,
-        Action<TRequest>? afterExecuter,
-        Action<TRequest>? afterUpdater,
-        Action? afterWork,
         Action<TRequest>? updater,
-        Action<Exception, TRequest>? onExecuterError,
-        Action<Exception, TRequest>? onUpdaterError,
-        Func<TRequest, object>? loggerId
+        JobOptions<TRequest> jobOptions
     )
     {
         Requester = requester;
         RequesterUnique = requesterUnique;
         Executer = executer;
         Updater = updater;
-        Options = new JobOptions<TRequest>()
-        {
-            AfterExecuter = afterExecuter,
-            AfterUpdater = afterUpdater,
-            AfterWork = afterWork,
-            OnExecuterError = onExecuterError,
-            OnUpdaterError = onUpdaterError,
-            LoggerId = loggerId
-        };
+        Options = jobOptions;
     }
 
     public JobOptions<TRequest> Options { get; init; }
@@ -41,12 +28,12 @@ public class Job<TRequest, TResponse> : IJob<TRequest, TResponse>
 
     private TResponse? RunExecuter(TRequest request)
     {
+        TResponse? response = default;
+
         try
         {
-            var response = Executer(request);
+            response = Executer(request);
             Handler.Success.AfterExecuter(Options.RequestName, Options.RequestId);
-
-            return response;
         }
         catch (Exception ex)
         {
@@ -62,7 +49,7 @@ public class Job<TRequest, TResponse> : IJob<TRequest, TResponse>
         {
             Options.AfterExecuter(request);
         }
-        return default;
+        return response;
     }
 
     private void RunUpdater(TRequest request)
@@ -164,60 +151,5 @@ public class Job<TRequest, TResponse> : IJob<TRequest, TResponse>
         }
 
         return RunAfterWork();
-    }
-}
-
-public static class Job
-{
-    public static IJob<TRequest, TResponse> Create<TRequest, TResponse>(
-        Func<IEnumerable<TRequest>> requester,
-        Func<TRequest, TResponse> executer,
-        Action<TRequest>? updater = null,
-        Action? afterWork = null,
-        Action<TRequest>? afterExecuter = null,
-        Action<TRequest>? afterUpdater = null,
-        Action<Exception, TRequest>? onExecuterError = null,
-        Action<Exception, TRequest>? onUpdaterError = null,
-        Func<TRequest, object>? loggerId = null
-    )
-    {
-        return new Job<TRequest, TResponse>(
-            requester,
-            null,
-            executer,
-            afterExecuter,
-            afterUpdater,
-            afterWork,
-            updater,
-            onExecuterError,
-            onUpdaterError,
-            loggerId
-        );
-    }
-
-    public static IJob<TRequest, TResponse> Create<TRequest, TResponse>(
-        Func<TRequest> requesterUnique,
-        Func<TRequest, TResponse> executer,
-        Action<TRequest>? updater = null,
-        Action? afterWork = null,
-        Action<TRequest>? afterExecuter = null,
-        Action<TRequest>? afterUpdater = null,
-        Action<Exception, TRequest>? onExecuterError = null,
-        Action<Exception, TRequest>? onUpdaterError = null,
-        Func<TRequest, object>? loggerId = null
-    )
-    {
-        return new Job<TRequest, TResponse>(
-            null,
-            requesterUnique,
-            executer,
-            afterExecuter,
-            afterUpdater,
-            afterWork,
-            updater,
-            onExecuterError,
-            onUpdaterError,
-            loggerId
-        );
     }
 }
