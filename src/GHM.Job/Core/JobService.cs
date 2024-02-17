@@ -9,12 +9,17 @@ public class JobService<TRequest> : IJobService<TRequest>
     private readonly IJobSuccessHandler<TRequest> _successHandler;
     private readonly IJobServiceHandler<TRequest> _serviceHandler;
 
-    public JobService(ITimeZoneStrategy timeZoneStrategy, JobHandler<TRequest> jobHandler)
+    public JobService(
+        ITimeZoneStrategy timeZoneStrategy,
+        IJobErrorHandler<TRequest> errorHandler,
+        IJobSuccessHandler<TRequest> successHandler,
+        IJobServiceHandler<TRequest> serviceHandler
+    )
     {
         _timeZoneStrategy = timeZoneStrategy;
-        _errorHandler = jobHandler.Error;
-        _successHandler = jobHandler.Success;
-        _serviceHandler = jobHandler.Service;
+        _errorHandler = errorHandler;
+        _successHandler = successHandler;
+        _serviceHandler = serviceHandler;
     }
 
     public async Task ExecuteAsync<TResponse>(
