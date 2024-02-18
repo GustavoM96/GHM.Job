@@ -107,8 +107,6 @@ public class JobAsyncServiceTests
         async Task Run() => await _jobService.ExecuteAsync(job, "* * * * *", token);
 
         // Assert
-        // Assertsd
-
         await Assert.ThrowsAsync<TaskCanceledException>(Run);
         Assert.Equal("processing => data => Executer0", result);
     }

@@ -72,7 +72,7 @@ public class JobServiceTests
             executer: Executer,
             jobOptions: new(afterExecuter: AfterExecuter, afterWork: AfterWork)
         );
-        async Task Run() => await _jobService.ExecuteAsync(job, TimeSpan.FromSeconds(0.1), token);
+        async Task Run() => await _jobService.ExecuteAsync(job, TimeSpan.FromMilliseconds(5), token);
 
         // Assert
         await Assert.ThrowsAsync<TaskCanceledException>(Run);
@@ -120,14 +120,15 @@ public class JobServiceTests
         var jobServiceutcAdd2Hours = new UtcAddingHoursTimeZoneStrategy(2);
 
         // Act
-        static bool DatesAreAlmostEqual(DateTime dateTimeBase, DateTime dateTimeinput)
-        {
-            return dateTimeBase.AddSeconds(1) > dateTimeinput && dateTimeBase.AddSeconds(-1) < dateTimeinput;
-        }
 
         // Assert
         Assert.True(DatesAreAlmostEqual(DateTime.Now, jobServiceNow.Now));
         Assert.True(DatesAreAlmostEqual(DateTime.UtcNow, jobServiceUtc.Now));
         Assert.True(DatesAreAlmostEqual(DateTime.UtcNow.AddHours(2), jobServiceutcAdd2Hours.Now));
+    }
+
+    private static bool DatesAreAlmostEqual(DateTime dateTimeBase, DateTime dateTimeinput)
+    {
+        return dateTimeBase.AddSeconds(1) > dateTimeinput && dateTimeBase.AddSeconds(-1) < dateTimeinput;
     }
 }
