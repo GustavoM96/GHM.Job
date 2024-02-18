@@ -89,14 +89,12 @@ public class Job<TRequest, TResponse>
         return response;
     }
 
-    protected Task RunAfterWork()
+    protected void RunAfterWork()
     {
         if (Options.AfterWork is not null)
         {
             Options.AfterWork();
         }
-
-        return Task.CompletedTask;
     }
 }
 
