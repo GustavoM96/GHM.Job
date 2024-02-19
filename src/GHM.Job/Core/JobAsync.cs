@@ -30,6 +30,10 @@ public class JobAsync<TRequest, TResponse>
             try
             {
                 response = await Executer(request);
+                if (Options.AfterExecuter is not null)
+                {
+                    Options.AfterExecuter(request);
+                }
             }
             catch (Exception ex)
             {
@@ -41,10 +45,6 @@ public class JobAsync<TRequest, TResponse>
                 }
             }
 
-            if (Options.AfterExecuter is not null)
-            {
-                Options.AfterExecuter(request);
-            }
             var jobResponse = new ExecuterResponse<TRequest, TResponse>(
                 request,
                 Options.GetId(request),
@@ -69,6 +69,10 @@ public class JobAsync<TRequest, TResponse>
                 {
                     await Updater(request, response);
                 }
+                if (Options.AfterUpdater is not null)
+                {
+                    Options.AfterUpdater(request);
+                }
             }
             catch (Exception ex)
             {
@@ -78,10 +82,6 @@ public class JobAsync<TRequest, TResponse>
                 }
             }
 
-            if (Options.AfterUpdater is not null)
-            {
-                Options.AfterUpdater(request);
-            }
             var jobResponse = new UpdaterResponse<TRequest, TResponse>(request, Options.GetId(request), response, exception);
             return jobResponse;
         }
