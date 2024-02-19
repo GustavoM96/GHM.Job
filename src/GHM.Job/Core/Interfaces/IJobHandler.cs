@@ -13,5 +13,7 @@ public interface IJobHandler<TRequest>
         Func<Task<ExecuterResponse<TRequest, TResponse>>> requester
     );
 
-    Task<UpdaterResponse<TRequest>> HandleUpdater(Func<Task<UpdaterResponse<TRequest>>> updater);
+    Task<UpdaterResponse<TRequest, TResponse>> HandleUpdater<TResponse>(
+        Func<Task<UpdaterResponse<TRequest, TResponse>>> updater
+    );
 }

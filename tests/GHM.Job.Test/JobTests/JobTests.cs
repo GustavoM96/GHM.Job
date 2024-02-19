@@ -10,7 +10,7 @@ public class JobTests
 
         string Requester() => " => data";
         string Executer(string data) => result += data + " => Executer";
-        void Updater(string data) => result += " => Updater";
+        void Updater(string request, string? response) => result += " => Updater";
         void AfterWork() => result += " => AfterWork";
         void AfterExecuter(string data) => result += " => AfterExecuter";
         string LoggerId(string data) => data;
@@ -59,7 +59,7 @@ public class JobTests
 
         string Requester() => " => data";
         string Executer(string data) => throw new Exception($"{data} => Error at Executer");
-        void Updater(string data) => throw new Exception($"{data} => Error at Updater");
+        void Updater(string request, string? response) => throw new Exception($"{request} => Error at Updater");
         void OnExecuterError(Exception exception, string data) => result += exception.Message;
         void OnUpdaterError(Exception exception, string data) => result += exception.Message;
 

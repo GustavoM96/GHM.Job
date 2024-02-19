@@ -2,7 +2,7 @@
 
 public class Job<TRequest, TResponse>
 {
-    public Job(Func<TRequest, TResponse> executer, Action<TRequest>? updater, JobOptions<TRequest> jobOptions)
+    public Job(Func<TRequest, TResponse> executer, Action<TRequest, TResponse?>? updater, JobOptions<TRequest> jobOptions)
     {
         Executer = executer;
         Updater = updater;
@@ -11,7 +11,7 @@ public class Job<TRequest, TResponse>
 
     public JobOptions<TRequest> Options { get; init; }
     public Func<TRequest, TResponse> Executer { get; init; }
-    public Action<TRequest>? Updater { get; init; }
+    public Action<TRequest, TResponse?>? Updater { get; init; }
     public IJobHandler<TRequest> Handler { get; private set; } = default!;
 
     public void SetHandler(IJobHandler<TRequest> handler) => Handler ??= handler;
@@ -54,16 +54,16 @@ public class Job<TRequest, TResponse>
         return response;
     }
 
-    protected async Task RunUpdater(TRequest request)
+    protected async Task RunUpdater(TRequest request, TResponse? response)
     {
-        Task<UpdaterResponse<TRequest>> DoUpdater()
+        Task<UpdaterResponse<TRequest, TResponse>> DoUpdater()
         {
             Exception? exception = default;
             try
             {
                 if (Updater is not null)
                 {
-                    Updater(request);
+                    Updater(request, response);
                 }
             }
             catch (Exception ex)
@@ -78,7 +78,7 @@ public class Job<TRequest, TResponse>
             {
                 Options.AfterUpdater(request);
             }
-            var jobResponse = new UpdaterResponse<TRequest>(request, Options.GetId(request), exception);
+            var jobResponse = new UpdaterResponse<TRequest, TResponse>(request, Options.GetId(request), response, exception);
             return Task.FromResult(jobResponse);
         }
 
@@ -93,7 +93,7 @@ public class Job<TRequest, TResponse>
         }
 
         var response = await RunExecuter(request);
-        await RunUpdater(request);
+        await RunUpdater(request, response);
 
         return response;
     }
@@ -112,7 +112,7 @@ public class JobUniqueRequest<TRequest, TResponse> : Job<TRequest, TResponse>, I
     public JobUniqueRequest(
         Func<TRequest> requester,
         Func<TRequest, TResponse> executer,
-        Action<TRequest>? updater,
+        Action<TRequest, TResponse?>? updater,
         JobOptions<TRequest> jobOptions
     )
         : base(executer, updater, jobOptions)
@@ -160,7 +160,7 @@ public class JobRequest<TRequest, TResponse> : Job<TRequest, TResponse>, IJob<TR
     public JobRequest(
         Func<IEnumerable<TRequest>> requester,
         Func<TRequest, TResponse> executer,
-        Action<TRequest>? updater,
+        Action<TRequest, TResponse?>? updater,
         JobOptions<TRequest> jobOptions
     )
         : base(executer, updater, jobOptions)

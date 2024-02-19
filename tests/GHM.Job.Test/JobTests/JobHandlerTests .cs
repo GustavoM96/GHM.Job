@@ -28,7 +28,7 @@ public class JobHandlerTests
 
         string Requester() => request;
         string Executer(string data) => result += data + " => Executer";
-        void Updater(string data) => result += " => Updater";
+        void Updater(string request, string? response) => result += " => Updater";
         void AfterWork() => result += " => AfterWork";
         void AfterExecuter(string data) => result += " => AfterExecuter";
         object LoggerId(string data) => id;
@@ -63,7 +63,7 @@ public class JobHandlerTests
 
         string Requester() => request;
         string Executer(string data) => result += data + " => Executer";
-        void Updater(string data) => result += " => Updater";
+        void Updater(string request, string? response) => result += " => Updater";
         void AfterExecuter(string data) => result += " => AfterExecuter";
         object LoggerId(string data) => id;
 
@@ -96,7 +96,7 @@ public class JobHandlerTests
 
         string Requester() => request;
         string Executer(string data) => result += data + " => Executer";
-        void Updater(string data) => result += " => Updater";
+        void Updater(string request, string? response) => result += " => Updater";
         void AfterExecuter(string data) => result += " => AfterExecuter";
         object LoggerId(string data) => id;
         void AfterWork()
@@ -136,7 +136,7 @@ public class JobHandlerTests
 
         string Requester() => request;
         string Executer(string data) => result += data + " => Executer";
-        void Updater(string data) => result += " => Updater";
+        void Updater(string request, string? response) => result += " => Updater";
         void AfterExecuter(string data) => result += " => AfterExecuter";
         object LoggerId(string data) => id;
         void AfterWork()

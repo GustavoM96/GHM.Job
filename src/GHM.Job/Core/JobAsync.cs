@@ -2,7 +2,11 @@
 
 public class JobAsync<TRequest, TResponse>
 {
-    public JobAsync(Func<TRequest, Task<TResponse>> executer, Func<TRequest, Task>? updater, JobOptions<TRequest> jobOptions)
+    public JobAsync(
+        Func<TRequest, Task<TResponse>> executer,
+        Func<TRequest, TResponse?, Task>? updater,
+        JobOptions<TRequest> jobOptions
+    )
     {
         Executer = executer;
         Updater = updater;
@@ -12,7 +16,7 @@ public class JobAsync<TRequest, TResponse>
     public JobOptions<TRequest> Options { get; init; }
 
     public Func<TRequest, Task<TResponse>> Executer { get; init; }
-    public Func<TRequest, Task>? Updater { get; init; }
+    public Func<TRequest, TResponse?, Task>? Updater { get; init; }
     public IJobHandler<TRequest> Handler { get; private set; } = default!;
 
     public void SetHandler(IJobHandler<TRequest> handler) => Handler ??= handler;
@@ -54,16 +58,16 @@ public class JobAsync<TRequest, TResponse>
         return response;
     }
 
-    protected async Task RunUpdater(TRequest request)
+    protected async Task RunUpdater(TRequest request, TResponse? response)
     {
-        async Task<UpdaterResponse<TRequest>> DoUpdater()
+        async Task<UpdaterResponse<TRequest, TResponse>> DoUpdater()
         {
             Exception? exception = default;
             try
             {
                 if (Updater is not null)
                 {
-                    await Updater(request);
+                    await Updater(request, response);
                 }
             }
             catch (Exception ex)
@@ -78,7 +82,7 @@ public class JobAsync<TRequest, TResponse>
             {
                 Options.AfterUpdater(request);
             }
-            var jobResponse = new UpdaterResponse<TRequest>(request, Options.GetId(request), exception);
+            var jobResponse = new UpdaterResponse<TRequest, TResponse>(request, Options.GetId(request), response, exception);
             return jobResponse;
         }
 
@@ -93,7 +97,7 @@ public class JobAsync<TRequest, TResponse>
         }
 
         var response = await RunExecuter(request);
-        await RunUpdater(request);
+        await RunUpdater(request, response);
 
         return response;
     }
@@ -112,7 +116,7 @@ public class JobUniqueRequestAsync<TRequest, TResponse> : JobAsync<TRequest, TRe
     public JobUniqueRequestAsync(
         Func<Task<TRequest>> requester,
         Func<TRequest, Task<TResponse>> executer,
-        Func<TRequest, Task>? updater,
+        Func<TRequest, TResponse?, Task>? updater,
         JobOptions<TRequest> jobOptions
     )
         : base(executer, updater, jobOptions)
@@ -159,7 +163,7 @@ public class JobRequestAsync<TRequest, TResponse> : JobAsync<TRequest, TResponse
     public JobRequestAsync(
         Func<Task<IEnumerable<TRequest>>> requester,
         Func<TRequest, Task<TResponse>> executer,
-        Func<TRequest, Task>? updater,
+        Func<TRequest, TResponse?, Task>? updater,
         JobOptions<TRequest> jobOptions
     )
         : base(executer, updater, jobOptions)

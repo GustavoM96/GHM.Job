@@ -9,8 +9,9 @@ public class JobHandlerDefault<TRequest> : IJobHandler<TRequest>
     public async Task<RequesterResponse<TRequest>> HandleRequester(Func<Task<RequesterResponse<TRequest>>> requester) =>
         await requester();
 
-    public async Task<UpdaterResponse<TRequest>> HandleUpdater(Func<Task<UpdaterResponse<TRequest>>> updater) =>
-        await updater();
+    public async Task<UpdaterResponse<TRequest, TResponse>> HandleUpdater<TResponse>(
+        Func<Task<UpdaterResponse<TRequest, TResponse>>> updater
+    ) => await updater();
 }
 
 public class JobServiceHandlerDefault<TRequest> : IJobServiceHandler<TRequest>

@@ -10,7 +10,7 @@ public class JobAsyncTests
 
         Task<string> Requester() => Task.FromResult(" => data");
         Task<string> Executer(string data) => Task.FromResult(result += data + " => Executer");
-        Task Updater(string data) => Task.FromResult(result += " => Updater");
+        Task Updater(string data, string? response) => Task.FromResult(result += " => Updater");
         void AfterWork() => result += " => AfterWork";
         void AfterExecuter(string data) => result += " => AfterExecuter";
         string LoggerId(string data) => data;
@@ -60,7 +60,7 @@ public class JobAsyncTests
 
         Task<string> Requester() => Task.FromResult(" => data");
         Task<string> Executer(string data) => throw new Exception($"{data} => Error at Executer");
-        Task Updater(string data) => throw new Exception($"{data} => Error at Updater");
+        Task Updater(string data, string? response) => throw new Exception($"{data} => Error at Updater");
         void OnExecuterError(Exception exception, string data) => result += exception.Message;
         void OnUpdaterError(Exception exception, string data) => result += exception.Message;
 

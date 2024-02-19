@@ -5,7 +5,7 @@ public static class JobFactory
     public static IJob<TRequest, TResponse> Create<TRequest, TResponse>(
         Func<IEnumerable<TRequest>> requester,
         Func<TRequest, TResponse> executer,
-        Action<TRequest>? updater = null,
+        Action<TRequest, TResponse?>? updater = null,
         JobOptions<TRequest>? jobOptions = null
     )
     {
@@ -15,7 +15,7 @@ public static class JobFactory
     public static IJob<TRequest, TResponse> Create<TRequest, TResponse>(
         Func<TRequest> requester,
         Func<TRequest, TResponse> executer,
-        Action<TRequest>? updater = null,
+        Action<TRequest, TResponse?>? updater = null,
         JobOptions<TRequest>? jobOptions = null
     )
     {
@@ -28,7 +28,7 @@ public static class JobAsyncFactory
     public static IJob<TRequest, TResponse> Create<TRequest, TResponse>(
         Func<Task<IEnumerable<TRequest>>> requester,
         Func<TRequest, Task<TResponse>> executer,
-        Func<TRequest, Task>? updater = null,
+        Func<TRequest, TResponse?, Task>? updater = null,
         JobOptions<TRequest>? jobOptions = null
     )
     {
@@ -38,7 +38,7 @@ public static class JobAsyncFactory
     public static IJob<TRequest, TResponse> Create<TRequest, TResponse>(
         Func<Task<TRequest>> requester,
         Func<TRequest, Task<TResponse>> executer,
-        Func<TRequest, Task>? updater = null,
+        Func<TRequest, TResponse?, Task>? updater = null,
         JobOptions<TRequest>? jobOptions = null
     )
     {
