@@ -32,6 +32,8 @@ var services = builder.Services;
 service.AddGhmJob();
 ```
 
+### TimeZoneStrategy
+
 If you want to set `TimeZoneStrategy` to set a DateTime.Now for executeAsync with cron string `* * * * *`, pass one of these strategies at calling AddGhmJob(ITimeZoneStrategy timeZoneStrategy).
 
 - NowTimeZoneStrategy()
@@ -45,7 +47,7 @@ var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
 
 var strategy = new UtcAddingHoursTimeZoneStrategy(-3) // -3Hours UTC
-service.AddGhmJob(strategy);
+service.AddGhmJob(options => options.TimeZoneStrategy = strategy);
 ```
 
 ```csharp
@@ -70,6 +72,71 @@ public class UtcAddingHoursTimeZoneStrategy : ITimeZoneStrategy
 
     public DateTime Now => DateTime.UtcNow.AddHours(_addhours);
 }
+```
+
+### Handlers
+
+To Add handlers at Requester, Executer and Updater executions, implement the `IJobHandler` at your handler class.
+
+```csharp
+public class MyJobHandler<TRequest> : IJobHandler<TRequest>
+{
+    public async Task<ExecuterResponse<TRequest, TResponse>> HandleExecuter<TResponse>(
+        Func<Task<ExecuterResponse<TRequest, TResponse>>> executer)
+    {
+        // after executer
+        var result = await executer();
+        // before executer
+        return result;
+    }
+
+    public async Task<RequesterResponse<TRequest>> HandleRequester(
+        Func<Task<RequesterResponse<TRequest>>> requester)
+    {
+        // after requester
+        var result = await requester();
+        // before requester
+        return result;
+    }
+
+    public async Task<UpdaterResponse<TRequest, TResponse>> HandleUpdater<TResponse>(
+        Func<Task<UpdaterResponse<TRequest, TResponse>>> updater)
+    {
+        // after updater
+        var result = await updater();
+        // before updater
+        return result;
+    }
+}
+
+public class MyJobServiceHandler<TRequest> : IJobServiceHandler<TRequest>
+{
+    public async Task<JobServiceResponse<TRequest>> HandleWork(
+        Func<Task<JobServiceResponse<TRequest>>> runWork)
+    {
+        // after runWork
+        var result = await updater();
+        // before runWork
+        return result;
+    }
+}
+```
+
+Add Handlers to serviceCollection
+
+```csharp
+using GHM.Job.Extensions;
+
+var builder = WebApplication.CreateBuilder(args);
+var services = builder.Services;
+
+service.AddGhmJob(
+    options =>
+    {
+        options.JobHandler = type(MyJobHandler)
+        options.JobServiceHandler = type(MyJobServiceHandler)
+    }
+);
 ```
 
 ## Example
@@ -106,13 +173,13 @@ public class MyBackgroundService : BackgroundService
         string LoggerId(string data) => data;
 
         // Act
-        var job = Job.Create(
-            requesterUnique: Requester,
+
+        var job = JobFactory.Create(
+            requester: Requester,
             executer: Executer,
             updater: Updater,
-            afterWork: AfterWork,
-            afterExecuter: AfterExecuter,
-            loggerId: LoggerId
+            jobOptions:
+                new JobOptions<TRequest>(afterWork: AfterWork, afterExecuter: AfterExecuter, loggerId: LoggerId)
         );
 
         // Setting delay: 1 second to the next job running.
@@ -151,13 +218,12 @@ public class MyBackgroundService : BackgroundService
         string LoggerId(string data) => data;
 
         // Act
-        var job = JobAsync.Create(
-            requesterUnique: RequesterAsync,
+        var job = JobAsyncFactory.Create(
+            requester: RequesterAsync,
             executer: ExecuterAsync,
             updater: UpdaterAsync,
-            afterWork: AfterWork,
-            afterExecuter: AfterExecuter,
-            loggerId: LoggerId
+            jobOptions:
+                new JobOptions<TRequest>(afterWork: AfterWork, afterExecuter: AfterExecuter, loggerId: LoggerId)
         );
 
         // Setting delay: 1 second to the next job running.
@@ -167,54 +233,6 @@ public class MyBackgroundService : BackgroundService
         await _jobService.ExecuteAsync(job, stoppingToken);
 
         // result = "processing => data => Executer => AfterExecuter => Updater => AfterWork"
-    }
-}
-```
-
-## Classes
-
-### IJobService
-
-It is a interface implemented by `JobService<TRequest>`
-
-```csharp
-namespace GHM.Job;
-
-public class JobService<TRequest> : IJobService<TRequest>
-{
-    public async Task ExecuteAsync<TResponse>(
-        Job<TRequest, TResponse> job,
-        TimeSpan interval,
-        CancellationToken token = default
-    )
-    {
-        while (!token.IsCancellationRequested)
-        {
-            await Task.Run(job.DoWork, token);
-            await Task.Delay(interval, token);
-        }
-    }
-
-    public async Task ExecuteAsync<TResponse>(Job<TRequest, TResponse> job, CancellationToken token = default)
-    {
-        await Task.Run(job.DoWork, token);
-    }
-
-    public async Task ExecuteAsync<TResponse>(Job<TRequest, TResponse> job, string cron, CancellationToken token = default)
-    {
-        var crontabSchedule = CrontabSchedule.Parse(cron);
-        var nextOccurrence = crontabSchedule.GetNextOccurrence(DateTime.Now);
-
-        while (!token.IsCancellationRequested)
-        {
-            if (DateTime.Now > nextOccurrence)
-            {
-                await Task.Run(job.DoWork, token);
-                nextOccurrence = crontabSchedule.GetNextOccurrence(DateTime.Now);
-            }
-
-            await Task.Delay(1000, token);
-        }
     }
 }
 ```
