@@ -23,8 +23,7 @@ public class JobTests
             jobOptions: new(afterWork: AfterWork, afterExecuter: AfterExecuter, loggerId: LoggerId)
         );
 
-        job.SetErrorHandler(JobHandler<string>.Default.Error);
-        job.SetSuccessHandler(JobHandler<string>.Default.Success);
+        job.SetHandler(JobHandler<string>.Default.Job);
 
         await job.DoWork();
 
@@ -44,8 +43,7 @@ public class JobTests
         // Act
         var job = JobFactory.Create(requester: Requester, executer: Executer);
 
-        job.SetErrorHandler(JobHandler<string>.Default.Error);
-        job.SetSuccessHandler(JobHandler<string>.Default.Success);
+        job.SetHandler(JobHandler<string>.Default.Job);
 
         await job.DoWork();
 
@@ -73,8 +71,7 @@ public class JobTests
             jobOptions: new(onExecuterError: OnExecuterError, onUpdaterError: OnUpdaterError)
         );
 
-        job.SetErrorHandler(JobHandler<string>.Default.Error);
-        job.SetSuccessHandler(JobHandler<string>.Default.Success);
+        job.SetHandler(JobHandler<string>.Default.Job);
 
         await job.DoWork();
 

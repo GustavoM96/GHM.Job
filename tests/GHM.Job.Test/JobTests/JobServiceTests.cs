@@ -4,8 +4,7 @@ public class JobServiceTests
 {
     private readonly IJobService<string> _jobService = new JobService<string>(
         new UtcAddingHoursTimeZoneStrategy(-5),
-        JobHandler<string>.Default.Error,
-        JobHandler<string>.Default.Success,
+        JobHandler<string>.Default.Job,
         JobHandler<string>.Default.Service
     );
 

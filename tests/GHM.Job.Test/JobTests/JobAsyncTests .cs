@@ -24,8 +24,7 @@ public class JobAsyncTests
             jobOptions: new(afterExecuter: AfterExecuter, afterWork: AfterWork, loggerId: LoggerId)
         );
 
-        job.SetErrorHandler(JobHandler<string>.Default.Error);
-        job.SetSuccessHandler(JobHandler<string>.Default.Success);
+        job.SetHandler(JobHandler<string>.Default.Job);
 
         await job.DoWork();
 
@@ -45,8 +44,7 @@ public class JobAsyncTests
         // Act
         var job = JobAsyncFactory.Create(requester: Requester, executer: Executer);
 
-        job.SetErrorHandler(JobHandler<string>.Default.Error);
-        job.SetSuccessHandler(JobHandler<string>.Default.Success);
+        job.SetHandler(JobHandler<string>.Default.Job);
 
         await job.DoWork();
 
@@ -74,8 +72,7 @@ public class JobAsyncTests
             jobOptions: new(onExecuterError: OnExecuterError, onUpdaterError: OnUpdaterError)
         );
 
-        job.SetErrorHandler(JobHandler<string>.Default.Error);
-        job.SetSuccessHandler(JobHandler<string>.Default.Success);
+        job.SetHandler(JobHandler<string>.Default.Job);
 
         await job.DoWork();
 

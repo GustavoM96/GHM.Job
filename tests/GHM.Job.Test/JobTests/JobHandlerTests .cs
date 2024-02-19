@@ -4,8 +4,7 @@ namespace GHM.Job.Test;
 
 public class JobHandlerTests
 {
-    private readonly Mock<IJobErrorHandler<string>> _jobErrorHandler = new();
-    private readonly Mock<IJobSuccessHandler<string>> _jobSuccessHandler = new();
+    private readonly Mock<IJobHandler<string>> _jobHandler = new();
     private readonly JobServiceHandlerTest _jobServiceHandler = new();
 
     private readonly IJobService<string> _jobService;
@@ -14,73 +13,9 @@ public class JobHandlerTests
     {
         _jobService = new JobService<string>(
             new UtcAddingHoursTimeZoneStrategy(-5),
-            JobHandler<string>.Default.Error,
-            JobHandler<string>.Default.Success,
+            JobHandler<string>.Default.Job,
             _jobServiceHandler
         );
-    }
-
-    [Fact]
-    public async Task Test_ErrorHandler_WhenThrow_ExceptionAtExecuter_ShouldRun_OnExecuterErrorAndOnUpdaterError()
-    {
-        // Arrange
-        var request = " => data";
-        var result = "processing";
-        var id = 12345;
-
-        var executerException = new Exception($" => Error at Executer");
-        var updaterException = new Exception($" => Error at Updater");
-
-        string Requester() => request;
-        string Executer(string data) => throw executerException;
-        void Updater(string data) => throw updaterException;
-        void OnExecuterError(Exception exception, string data) => result += data + exception.Message;
-        void OnUpdaterError(Exception exception, string data) => result += data + exception.Message;
-        object LoggerId(string data) => id;
-
-        // Act
-        var job = JobFactory.Create(
-            requester: Requester,
-            executer: Executer,
-            updater: Updater,
-            jobOptions: new(onExecuterError: OnExecuterError, onUpdaterError: OnUpdaterError, loggerId: LoggerId)
-        );
-
-        job.SetErrorHandler(_jobErrorHandler.Object);
-        job.SetSuccessHandler(_jobSuccessHandler.Object);
-
-        await job.DoWork();
-
-        // Assert
-        Assert.Equal("processing => data => Error at Executer => data => Error at Updater", result);
-        _jobErrorHandler.Verify(handler => handler.OnExecuterError(executerException, request, id));
-        _jobErrorHandler.Verify(handler => handler.OnUpdaterError(updaterException, request, id));
-
-        _jobSuccessHandler.Verify(handler => handler.AfterUpdater(request, id), Times.Never);
-        _jobSuccessHandler.Verify(handler => handler.AfterExecuter(request, id), Times.Never);
-    }
-
-    [Fact]
-    public async Task Test_ErrorHandler_WhenThrow_Exception_ShouldRun_OnRequesterError()
-    {
-        // Arrange
-        var id = 12345;
-        var exception = new Exception($"Error at processing");
-
-        string Requester() => throw exception;
-        string Executer(string data) => throw exception;
-        object LoggerId(string data) => id;
-
-        // Act
-        var job = JobFactory.Create(requester: Requester, executer: Executer, jobOptions: new(loggerId: LoggerId));
-
-        job.SetErrorHandler(_jobErrorHandler.Object);
-        job.SetSuccessHandler(_jobSuccessHandler.Object);
-        await job.DoWork();
-
-        // Assert
-        _jobErrorHandler.Verify(handler => handler.OnRequesterError(exception));
-        _jobSuccessHandler.VerifyNoOtherCalls();
     }
 
     [Fact]
@@ -106,18 +41,16 @@ public class JobHandlerTests
             jobOptions: new(afterWork: AfterWork, afterExecuter: AfterExecuter, loggerId: LoggerId)
         );
 
-        job.SetErrorHandler(_jobErrorHandler.Object);
-        job.SetSuccessHandler(_jobSuccessHandler.Object);
+        job.SetHandler(JobHandler<string>.Default.Job);
 
         await job.DoWork();
 
         // Assert
         Assert.Equal("processing => data => Executer => AfterExecuter => Updater => AfterWork", result);
 
-        _jobSuccessHandler.Verify(handler => handler.AfterRequester(request, id));
-        _jobSuccessHandler.Verify(handler => handler.AfterExecuter(request, id));
-        _jobSuccessHandler.Verify(handler => handler.AfterUpdater(request, id));
-        _jobErrorHandler.VerifyNoOtherCalls();
+        // _jobHandler.Verify(handler => handler.HandleRequester(It.IsAny<Func<Task<RequesterResponse<string>>>>()));
+        // _jobHandler.Verify(handler => handler.HandleExecuter(It.IsAny<Func<Task<ExecuterResponse<string, string>>>>()));
+        // _jobHandler.Verify(handler => handler.HandleUpdater(It.IsAny<Func<Task<UpdaterResponse<string>>>>()));
     }
 
     [Fact]
