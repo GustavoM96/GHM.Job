@@ -13,8 +13,7 @@ public static class ServiceExtensions
         }
 
         services.AddScoped(sp => options.TimeZoneStrategy);
-        services.AddScoped(typeof(IJobErrorHandler<>), options.JobErrorHandler);
-        services.AddScoped(typeof(IJobSuccessHandler<>), options.JobSuccessHandler);
+        services.AddScoped(typeof(IJobHandler<>), options.JobHandler);
         services.AddScoped(typeof(IJobServiceHandler<>), options.JobServiceHandler);
         services.AddScoped(typeof(IJobService<>), typeof(JobService<>));
 

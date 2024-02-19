@@ -5,20 +5,17 @@ namespace GHM.Job;
 public class JobService<TRequest> : IJobService<TRequest>
 {
     private readonly ITimeZoneStrategy _timeZoneStrategy;
-    private readonly IJobErrorHandler<TRequest> _errorHandler;
-    private readonly IJobSuccessHandler<TRequest> _successHandler;
+    private readonly IJobHandler<TRequest> _jobHandler;
     private readonly IJobServiceHandler<TRequest> _serviceHandler;
 
     public JobService(
         ITimeZoneStrategy timeZoneStrategy,
-        IJobErrorHandler<TRequest> errorHandler,
-        IJobSuccessHandler<TRequest> successHandler,
+        IJobHandler<TRequest> jobHandler,
         IJobServiceHandler<TRequest> serviceHandler
     )
     {
         _timeZoneStrategy = timeZoneStrategy;
-        _errorHandler = errorHandler;
-        _successHandler = successHandler;
+        _jobHandler = jobHandler;
         _serviceHandler = serviceHandler;
     }
 
@@ -28,15 +25,14 @@ public class JobService<TRequest> : IJobService<TRequest>
         CancellationToken token = default
     )
     {
-        job.SetErrorHandler(_errorHandler);
-        job.SetSuccessHandler(_successHandler);
+        job.SetHandler(_jobHandler);
 
         while (!token.IsCancellationRequested)
         {
             async Task<JobServiceResponse<TRequest>> Work()
             {
-                var response = await Task.Run(job.DoWork, token);
-                return new JobServiceResponse<TRequest>(_timeZoneStrategy.Now.Add(interval), interval, response);
+                await Task.Run(job.DoWork, token);
+                return new JobServiceResponse<TRequest>(_timeZoneStrategy.Now.Add(interval), interval);
             }
 
             await _serviceHandler.HandleWork(Work);
@@ -46,13 +42,12 @@ public class JobService<TRequest> : IJobService<TRequest>
 
     public async Task ExecuteAsync<TResponse>(IJob<TRequest, TResponse> job, CancellationToken token = default)
     {
-        job.SetErrorHandler(_errorHandler);
-        job.SetSuccessHandler(_successHandler);
+        job.SetHandler(_jobHandler);
 
         async Task<JobServiceResponse<TRequest>> Work()
         {
-            var response = await Task.Run(job.DoWork, token);
-            return new JobServiceResponse<TRequest>(null, null, response);
+            await Task.Run(job.DoWork, token);
+            return new JobServiceResponse<TRequest>(null, null);
         }
 
         await _serviceHandler.HandleWork(Work);
@@ -60,8 +55,7 @@ public class JobService<TRequest> : IJobService<TRequest>
 
     public async Task ExecuteAsync<TResponse>(IJob<TRequest, TResponse> job, string cron, CancellationToken token = default)
     {
-        job.SetErrorHandler(_errorHandler);
-        job.SetSuccessHandler(_successHandler);
+        job.SetHandler(_jobHandler);
 
         var crontabSchedule = CrontabSchedule.Parse(cron);
         var nextOccurrence = crontabSchedule.GetNextOccurrence(_timeZoneStrategy.Now);
@@ -72,10 +66,10 @@ public class JobService<TRequest> : IJobService<TRequest>
             {
                 async Task<JobServiceResponse<TRequest>> Work()
                 {
-                    var response = await Task.Run(job.DoWork, token);
+                    await Task.Run(job.DoWork, token);
 
                     nextOccurrence = crontabSchedule.GetNextOccurrence(_timeZoneStrategy.Now);
-                    return new JobServiceResponse<TRequest>(nextOccurrence, null, response);
+                    return new JobServiceResponse<TRequest>(nextOccurrence, null);
                 }
 
                 await _serviceHandler.HandleWork(Work);

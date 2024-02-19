@@ -2,28 +2,67 @@
 
 public class JobServiceResponse<TRequest>
 {
-    public JobServiceResponse(DateTime? nextRun, TimeSpan? byInterval, IEnumerable<JobResponse<TRequest>> jobResponses)
+    public JobServiceResponse(DateTime? nextRun, TimeSpan? byInterval)
     {
         NextRun = nextRun;
         ByInterval = byInterval;
-        JobResponses = jobResponses;
     }
 
     public DateTime? NextRun { get; init; }
     public TimeSpan? ByInterval { get; init; }
-    public IEnumerable<JobResponse<TRequest>> JobResponses { get; init; }
 }
 
-public class JobResponse<TRequest>
+public class ExecuterResponse<TRequest, TResponse>
 {
-    public JobResponse(TRequest? request, object? requestId, object? response)
+    public ExecuterResponse(TRequest? request, object? requestId, TResponse? response, Exception? exception)
     {
+        Exception = exception;
         Request = request;
         RequestId = requestId;
         Response = response;
     }
 
-    public TRequest? Request { get; init; }
-    public object? RequestId { get; init; }
-    public object? Response { get; init; }
+    public Exception? Exception { get; }
+    public TRequest? Request { get; }
+    public object? RequestId { get; }
+    public TResponse? Response { get; }
+}
+
+public class UpdaterResponse<TRequest>
+{
+    public UpdaterResponse(TRequest? request, object? requestId, Exception? exception)
+    {
+        Exception = exception;
+        Request = request;
+        RequestId = requestId;
+    }
+
+    public Exception? Exception { get; }
+    public TRequest? Request { get; }
+    public object? RequestId { get; }
+}
+
+public class RequesterResponse<TRequest>
+{
+    public RequesterResponse(IEnumerable<RequestData<TRequest>> requests, Exception? exception)
+    {
+        Exception = exception;
+        Requests = requests;
+    }
+
+    public Exception? Exception { get; }
+    public IEnumerable<RequestData<TRequest>> Requests { get; }
+    public object? RequestId { get; }
+}
+
+public class RequestData<TRequest>
+{
+    public RequestData(TRequest? value, object? id)
+    {
+        Value = value;
+        Id = id;
+    }
+
+    public object? Id { get; }
+    public TRequest? Value { get; }
 }

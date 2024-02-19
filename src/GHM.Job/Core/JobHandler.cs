@@ -1,21 +1,16 @@
 ﻿namespace GHM.Job;
 
-public class JobErrorHandlerDefault<TRequest> : IJobErrorHandler<TRequest>
+public class JobHandlerDefault<TRequest> : IJobHandler<TRequest>
 {
-    public void OnRequesterError(Exception ex) { }
+    public async Task<ExecuterResponse<TRequest, TResponse>> HandleExecuter<TResponse>(
+        Func<Task<ExecuterResponse<TRequest, TResponse>>> executer
+    ) => await executer();
 
-    public void OnExecuterError(Exception ex, TRequest request, object? requestId) { }
+    public async Task<RequesterResponse<TRequest>> HandleRequester(Func<Task<RequesterResponse<TRequest>>> requester) =>
+        await requester();
 
-    public void OnUpdaterError(Exception ex, TRequest request, object? requestId) { }
-}
-
-public class JobSuccessHandlerDefault<TRequest> : IJobSuccessHandler<TRequest>
-{
-    public void AfterRequester(TRequest request, object? requestId) { }
-
-    public void AfterExecuter(TRequest request, object? requestId) { }
-
-    public void AfterUpdater(TRequest request, object? requestId) { }
+    public async Task<UpdaterResponse<TRequest>> HandleUpdater(Func<Task<UpdaterResponse<TRequest>>> updater) =>
+        await updater();
 }
 
 public class JobServiceHandlerDefault<TRequest> : IJobServiceHandler<TRequest>
@@ -24,29 +19,22 @@ public class JobServiceHandlerDefault<TRequest> : IJobServiceHandler<TRequest>
         await runWork();
 }
 
-public class JobHandler<TRequest> : IJobHandler<TRequest>
+public class JobHandler<TRequest>
 {
-    public JobHandler(
-        IJobServiceHandler<TRequest> service,
-        IJobErrorHandler<TRequest> error,
-        IJobSuccessHandler<TRequest> success
-    )
+    public JobHandler(IJobServiceHandler<TRequest> service, IJobHandler<TRequest> job)
     {
         Service = service;
-        Error = error;
-        Success = success;
+        Job = job;
     }
 
     private JobHandler()
     {
         Service = new JobServiceHandlerDefault<TRequest>();
-        Error = new JobErrorHandlerDefault<TRequest>();
-        Success = new JobSuccessHandlerDefault<TRequest>();
+        Job = new JobHandlerDefault<TRequest>();
     }
 
     public IJobServiceHandler<TRequest> Service { get; init; }
-    public IJobErrorHandler<TRequest> Error { get; init; }
-    public IJobSuccessHandler<TRequest> Success { get; init; }
+    public IJobHandler<TRequest> Job { get; init; }
 
     public static JobHandler<TRequest> Default => new();
 }

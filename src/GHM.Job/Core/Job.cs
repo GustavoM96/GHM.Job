@@ -12,79 +12,88 @@ public class Job<TRequest, TResponse>
     public JobOptions<TRequest> Options { get; init; }
     public Func<TRequest, TResponse> Executer { get; init; }
     public Action<TRequest>? Updater { get; init; }
-    public IJobErrorHandler<TRequest> ErrorHandler { get; private set; } = default!;
-    public IJobSuccessHandler<TRequest> SuccessHandler { get; private set; } = default!;
+    public IJobHandler<TRequest> Handler { get; private set; } = default!;
 
-    public void SetErrorHandler(IJobErrorHandler<TRequest> handler) => ErrorHandler ??= handler;
+    public void SetHandler(IJobHandler<TRequest> handler) => Handler ??= handler;
 
-    public void SetSuccessHandler(IJobSuccessHandler<TRequest> handler) => SuccessHandler ??= handler;
-
-    protected TResponse? RunExecuter(TRequest request)
+    protected async Task<TResponse?> RunExecuter(TRequest request)
     {
         TResponse? response = default;
 
-        try
+        Task<ExecuterResponse<TRequest, TResponse>> DoExecuter()
         {
-            response = Executer(request);
-            SuccessHandler.AfterExecuter(request, Options.RequestId);
-        }
-        catch (Exception ex)
-        {
-            if (Options.OnExecuterError is not null)
+            Exception? exception = default;
+            try
             {
-                Options.OnExecuterError(ex, request);
+                response = Executer(request);
+            }
+            catch (Exception ex)
+            {
+                exception = ex;
+
+                if (Options.OnExecuterError is not null)
+                {
+                    Options.OnExecuterError(ex, request);
+                }
             }
 
-            ErrorHandler.OnExecuterError(ex, request, Options.RequestId);
+            if (Options.AfterExecuter is not null)
+            {
+                Options.AfterExecuter(request);
+            }
+            var jobResponse = new ExecuterResponse<TRequest, TResponse>(
+                request,
+                Options.GetId(request),
+                response,
+                exception
+            );
+            return Task.FromResult(jobResponse);
         }
 
-        if (Options.AfterExecuter is not null)
-        {
-            Options.AfterExecuter(request);
-        }
+        await Handler.HandleExecuter(DoExecuter);
         return response;
     }
 
-    protected void RunUpdater(TRequest request)
+    protected async Task RunUpdater(TRequest request)
     {
-        try
+        Task<UpdaterResponse<TRequest>> DoUpdater()
         {
-            if (Updater is not null)
+            Exception? exception = default;
+            try
             {
-                Updater(request);
-                SuccessHandler.AfterUpdater(request, Options.RequestId);
+                if (Updater is not null)
+                {
+                    Updater(request);
+                }
             }
-        }
-        catch (Exception ex)
-        {
-            if (Options.OnUpdaterError is not null)
+            catch (Exception ex)
             {
-                Options.OnUpdaterError(ex, request);
+                if (Options.OnUpdaterError is not null)
+                {
+                    Options.OnUpdaterError(ex, request);
+                }
             }
-            ErrorHandler.OnUpdaterError(ex, request, Options.RequestId);
+
+            if (Options.AfterUpdater is not null)
+            {
+                Options.AfterUpdater(request);
+            }
+            var jobResponse = new UpdaterResponse<TRequest>(request, Options.GetId(request), exception);
+            return Task.FromResult(jobResponse);
         }
 
-        if (Options.AfterUpdater is not null)
-        {
-            Options.AfterUpdater(request);
-        }
+        await Handler.HandleUpdater(DoUpdater);
     }
 
-    protected TResponse? RunRequest(TRequest? request)
+    protected async Task<TResponse?> RunRequest(TRequest? request)
     {
         if (request is null)
         {
             return default;
         }
-        if (Options.LoggerId is not null)
-        {
-            Options.RequestId = Options.LoggerId(request);
-        }
 
-        SuccessHandler.AfterRequester(request, Options.RequestId);
-
-        var response = RunExecuter(request);
-        RunUpdater(request);
+        var response = await RunExecuter(request);
+        await RunUpdater(request);
 
         return response;
     }
@@ -113,29 +122,36 @@ public class JobUniqueRequest<TRequest, TResponse> : Job<TRequest, TResponse>, I
 
     public Func<TRequest> Requester { get; init; }
 
-    private TRequest? RunRequester()
+    private async Task<TRequest?> RunRequester()
     {
-        try
+        TRequest? request = default;
+
+        Task<RequesterResponse<TRequest>> DoRequester()
         {
-            return Requester();
+            Exception? exception = default;
+            try
+            {
+                request = Requester();
+            }
+            catch (Exception ex)
+            {
+                exception = ex;
+            }
+
+            var requestData = new RequestData<TRequest>[1] { new(request, Options.GetId(request)) };
+            var jobResponse = new RequesterResponse<TRequest>(requestData, exception);
+            return Task.FromResult(jobResponse);
         }
-        catch (Exception ex)
-        {
-            ErrorHandler.OnRequesterError(ex);
-            return default;
-        }
+
+        await Handler.HandleRequester(DoRequester);
+        return request;
     }
 
-    public Task<IEnumerable<JobResponse<TRequest>>> DoWork()
+    public async Task DoWork()
     {
-        var request = RunRequester();
-        var response = RunRequest(request);
+        var request = await RunRequester();
+        await RunRequest(request);
         RunAfterWork();
-
-        var jobResponse = new JobResponse<TRequest>(request, Options.RequestId, response);
-        var jobResponses = new JobResponse<TRequest>[1] { jobResponse };
-
-        return Task.FromResult<IEnumerable<JobResponse<TRequest>>>(jobResponses);
     }
 }
 
@@ -154,32 +170,41 @@ public class JobRequest<TRequest, TResponse> : Job<TRequest, TResponse>, IJob<TR
 
     public Func<IEnumerable<TRequest>> Requester { get; init; }
 
-    private IEnumerable<TRequest> RunRequester()
+    private async Task<IEnumerable<TRequest>> RunRequester()
     {
-        try
+        IEnumerable<TRequest> request = Enumerable.Empty<TRequest>();
+
+        Task<RequesterResponse<TRequest>> DoRequester()
         {
-            return Requester();
+            Exception? exception = default;
+            try
+            {
+                request = Requester();
+            }
+            catch (Exception ex)
+            {
+                exception = ex;
+            }
+
+            var requestData = request.Select(req => new RequestData<TRequest>(req, Options.GetId(req)));
+
+            var jobResponse = new RequesterResponse<TRequest>(requestData, exception);
+            return Task.FromResult(jobResponse);
         }
-        catch (Exception ex)
-        {
-            ErrorHandler.OnRequesterError(ex);
-            return Enumerable.Empty<TRequest>();
-        }
+
+        await Handler.HandleRequester(DoRequester);
+        return request;
     }
 
-    public Task<IEnumerable<JobResponse<TRequest>>> DoWork()
+    public async Task DoWork()
     {
-        var requests = RunRequester().ToList();
-        var jobResponses = new List<JobResponse<TRequest>>(requests.Count);
+        var requests = (await RunRequester()).ToList();
 
         foreach (var request in requests)
         {
-            var response = RunRequest(request);
-            var jobResponse = new JobResponse<TRequest>(request, Options.RequestId, response);
-            jobResponses.Add(jobResponse);
+            await RunRequest(request);
         }
 
         RunAfterWork();
-        return Task.FromResult<IEnumerable<JobResponse<TRequest>>>(jobResponses);
     }
 }
