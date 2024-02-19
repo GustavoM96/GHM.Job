@@ -115,7 +115,7 @@ public class MyJobServiceHandler<TRequest> : IJobServiceHandler<TRequest>
         Func<Task<JobServiceResponse<TRequest>>> runWork)
     {
         // after runWork
-        var result = await updater();
+        var result = await runWork();
         // before runWork
         return result;
     }
