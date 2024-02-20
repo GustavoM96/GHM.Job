@@ -20,17 +20,17 @@ public class Job<TRequest, TResponse>
     {
         TResponse? response = default;
 
-        Task<ExecuterResponse<TRequest, TResponse>> DoExecuter()
+        Task<ExecuterResponse<TResponse>> DoExecuter(TRequest req)
         {
             Exception? exception = default;
             try
             {
-                Handler.HandleBeforeExecuter(request, Options.GetId(request));
+                Handler.HandleBeforeExecuter(req, Options.GetId(req));
 
-                response = Executer(request);
+                response = Executer(req);
                 if (Options.AfterExecuter is not null)
                 {
-                    Options.AfterExecuter(request);
+                    Options.AfterExecuter(req);
                 }
             }
             catch (Exception ex)
@@ -39,52 +39,47 @@ public class Job<TRequest, TResponse>
 
                 if (Options.OnExecuterError is not null)
                 {
-                    Options.OnExecuterError(ex, request);
+                    Options.OnExecuterError(ex, req);
                 }
             }
 
-            var jobResponse = new ExecuterResponse<TRequest, TResponse>(
-                request,
-                Options.GetId(request),
-                response,
-                exception
-            );
+            var jobResponse = new ExecuterResponse<TResponse>(response, exception);
             return Task.FromResult(jobResponse);
         }
 
-        await Handler.HandleExecuter(DoExecuter);
+        await Handler.HandleExecuter(DoExecuter, request, Options.GetId(request));
         return response;
     }
 
     protected async Task RunUpdater(TRequest request, TResponse? response)
     {
-        Task<UpdaterResponse<TRequest, TResponse>> DoUpdater()
+        Task<UpdaterResponse<TResponse>> DoUpdater(TRequest req)
         {
             Exception? exception = default;
             try
             {
                 if (Updater is not null)
                 {
-                    Updater(request, response);
+                    Updater(req, response);
                 }
                 if (Options.AfterUpdater is not null)
                 {
-                    Options.AfterUpdater(request);
+                    Options.AfterUpdater(req);
                 }
             }
             catch (Exception ex)
             {
                 if (Options.OnUpdaterError is not null)
                 {
-                    Options.OnUpdaterError(ex, request);
+                    Options.OnUpdaterError(ex, req);
                 }
             }
 
-            var jobResponse = new UpdaterResponse<TRequest, TResponse>(request, Options.GetId(request), response, exception);
+            var jobResponse = new UpdaterResponse<TResponse>(response, exception);
             return Task.FromResult(jobResponse);
         }
 
-        await Handler.HandleUpdater(DoUpdater);
+        await Handler.HandleUpdater(DoUpdater, request, Options.GetId(request));
     }
 
     protected async Task<TResponse?> RunRequest(TRequest? request)

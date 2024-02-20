@@ -12,35 +12,27 @@ public class JobServiceResponse<TRequest>
     public TimeSpan? ByInterval { get; init; }
 }
 
-public class ExecuterResponse<TRequest, TResponse>
+public class ExecuterResponse<TResponse>
 {
-    public ExecuterResponse(TRequest? request, object? requestId, TResponse? response, Exception? exception)
+    public ExecuterResponse(TResponse? response, Exception? exception)
     {
         Exception = exception;
-        Request = request;
-        RequestId = requestId;
         Response = response;
     }
 
     public Exception? Exception { get; }
-    public TRequest? Request { get; }
-    public object? RequestId { get; }
     public TResponse? Response { get; }
 }
 
-public class UpdaterResponse<TRequest, TResponse>
+public class UpdaterResponse<TResponse>
 {
-    public UpdaterResponse(TRequest? request, object? requestId, TResponse? response, Exception? exception)
+    public UpdaterResponse(TResponse? response, Exception? exception)
     {
         Exception = exception;
-        Request = request;
-        RequestId = requestId;
         Response = response;
     }
 
     public Exception? Exception { get; }
-    public TRequest? Request { get; }
-    public object? RequestId { get; }
     public TResponse? Response { get; }
 }
 

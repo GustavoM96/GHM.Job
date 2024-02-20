@@ -11,11 +11,15 @@ public interface IJobHandler<TRequest>
 
     Task<RequesterResponse<TRequest>> HandleRequester(Func<Task<RequesterResponse<TRequest>>> requester);
 
-    Task<ExecuterResponse<TRequest, TResponse>> HandleExecuter<TResponse>(
-        Func<Task<ExecuterResponse<TRequest, TResponse>>> requester
+    Task<ExecuterResponse<TResponse>> HandleExecuter<TResponse>(
+        Func<TRequest, Task<ExecuterResponse<TResponse>>> requester,
+        TRequest request,
+        object? requestId
     );
 
-    Task<UpdaterResponse<TRequest, TResponse>> HandleUpdater<TResponse>(
-        Func<Task<UpdaterResponse<TRequest, TResponse>>> updater
+    Task<UpdaterResponse<TResponse>> HandleUpdater<TResponse>(
+        Func<TRequest, Task<UpdaterResponse<TResponse>>> updater,
+        TRequest request,
+        object? requestId
     );
 }

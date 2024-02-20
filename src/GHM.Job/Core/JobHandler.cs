@@ -4,16 +4,20 @@ public class JobHandlerDefault<TRequest> : IJobHandler<TRequest>
 {
     public void HandleBeforeExecuter(TRequest request, object? requestId) { }
 
-    public async Task<ExecuterResponse<TRequest, TResponse>> HandleExecuter<TResponse>(
-        Func<Task<ExecuterResponse<TRequest, TResponse>>> executer
-    ) => await executer();
+    public async Task<ExecuterResponse<TResponse>> HandleExecuter<TResponse>(
+        Func<TRequest, Task<ExecuterResponse<TResponse>>> requester,
+        TRequest request,
+        object? requestId
+    ) => await requester(request);
 
     public async Task<RequesterResponse<TRequest>> HandleRequester(Func<Task<RequesterResponse<TRequest>>> requester) =>
         await requester();
 
-    public async Task<UpdaterResponse<TRequest, TResponse>> HandleUpdater<TResponse>(
-        Func<Task<UpdaterResponse<TRequest, TResponse>>> updater
-    ) => await updater();
+    public async Task<UpdaterResponse<TResponse>> HandleUpdater<TResponse>(
+        Func<TRequest, Task<UpdaterResponse<TResponse>>> updater,
+        TRequest request,
+        object? requestId
+    ) => await updater(request);
 }
 
 public class JobServiceHandlerDefault<TRequest> : IJobServiceHandler<TRequest>
