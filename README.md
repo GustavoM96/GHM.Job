@@ -81,30 +81,40 @@ To Add handlers at Requester, Executer and Updater executions, implement the `IJ
 ```csharp
 public class MyJobHandler<TRequest> : IJobHandler<TRequest>
 {
-    public async Task<ExecuterResponse<TRequest, TResponse>> HandleExecuter<TResponse>(
-        Func<Task<ExecuterResponse<TRequest, TResponse>>> executer)
+
+    public void HandleBeforeExecuter(TRequest request, object? requestId)
     {
-        // after executer
-        var result = await executer();
         // before executer
+    }
+
+    public async Task<ExecuterResponse<TResponse>> HandleExecuter<TResponse>(
+        Func<TRequest, Task<ExecuterResponse<TResponse>>> requester,
+        TRequest request,
+        object? requestId)
+    {
+        // before executer
+        var result = await executer(request);
+        // after executer
         return result;
     }
 
     public async Task<RequesterResponse<TRequest>> HandleRequester(
         Func<Task<RequesterResponse<TRequest>>> requester)
     {
-        // after requester
-        var result = await requester();
         // before requester
+        var result = await requester();
+        // after requester
         return result;
     }
 
-    public async Task<UpdaterResponse<TRequest, TResponse>> HandleUpdater<TResponse>(
-        Func<Task<UpdaterResponse<TRequest, TResponse>>> updater)
+   public async Task<UpdaterResponse<TResponse>> HandleUpdater<TResponse>(
+        Func<TRequest, Task<UpdaterResponse<TResponse>>> updater,
+        TRequest request,
+        object? requestId)
     {
-        // after updater
-        var result = await updater();
         // before updater
+        var result = await updater(request);
+        // after updater
         return result;
     }
 }
@@ -114,9 +124,9 @@ public class MyJobServiceHandler<TRequest> : IJobServiceHandler<TRequest>
     public async Task<JobServiceResponse<TRequest>> HandleWork(
         Func<Task<JobServiceResponse<TRequest>>> runWork)
     {
-        // after runWork
-        var result = await runWork();
         // before runWork
+        var result = await runWork();
+        // after runWork
         return result;
     }
 }
