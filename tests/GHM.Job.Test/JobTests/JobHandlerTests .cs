@@ -1,10 +1,7 @@
-using Moq;
-
 namespace GHM.Job.Test;
 
 public class JobHandlerTests
 {
-    private readonly Mock<IJobHandler<string>> _jobHandler = new();
     private readonly JobServiceHandlerTest _jobServiceHandler = new();
 
     private readonly IJobService<string> _jobService;
@@ -47,10 +44,6 @@ public class JobHandlerTests
 
         // Assert
         Assert.Equal("processing => data => Executer => AfterExecuter => Updater => AfterWork", result);
-
-        // _jobHandler.Verify(handler => handler.HandleRequester(It.IsAny<Func<Task<RequesterResponse<string>>>>()));
-        // _jobHandler.Verify(handler => handler.HandleExecuter(It.IsAny<Func<Task<ExecuterResponse<string, string>>>>()));
-        // _jobHandler.Verify(handler => handler.HandleUpdater(It.IsAny<Func<Task<UpdaterResponse<string>>>>()));
     }
 
     [Fact]
