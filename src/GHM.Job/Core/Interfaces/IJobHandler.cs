@@ -7,6 +7,8 @@ public interface IJobServiceHandler<TRequest>
 
 public interface IJobHandler<TRequest>
 {
+    void HandleBeforeExecuter(TRequest request, object? requestId);
+
     Task<RequesterResponse<TRequest>> HandleRequester(Func<Task<RequesterResponse<TRequest>>> requester);
 
     Task<ExecuterResponse<TRequest, TResponse>> HandleExecuter<TResponse>(

@@ -2,6 +2,8 @@
 
 public class JobHandlerDefault<TRequest> : IJobHandler<TRequest>
 {
+    public void HandleBeforeExecuter(TRequest request, object? requestId) { }
+
     public async Task<ExecuterResponse<TRequest, TResponse>> HandleExecuter<TResponse>(
         Func<Task<ExecuterResponse<TRequest, TResponse>>> executer
     ) => await executer();
